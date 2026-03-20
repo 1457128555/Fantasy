@@ -1,6 +1,7 @@
 #include <jni.h>
 #include <string>
 #include <vector>
+#include <sstream>
 #include <GLES3/gl3.h>
 #include "rhi/RHITexture.h"
 #include "rhi/RHIShader.h"
@@ -20,6 +21,31 @@
 #define TAG "FantasyBridge"
 
 using namespace fantasy::rhi;
+
+// Helper: parse "brightness:0.2\ncontrast:0.0\n..." into FilterChain
+static std::shared_ptr<fantasy::filter::FilterChain> parseFilterConfig(const std::string& config) {
+    using namespace fantasy::filter;
+    auto chain = std::make_shared<FilterChain>();
+
+    std::istringstream stream(config);
+    std::string line;
+    while (std::getline(stream, line)) {
+        if (line.empty()) continue;
+        auto colonPos = line.find(':');
+        if (colonPos == std::string::npos) continue;
+
+        std::string name = line.substr(0, colonPos);
+        float value = std::stof(line.substr(colonPos + 1));
+
+        if (name == "brightness") {
+            auto f = std::make_shared<BrightnessFilter>();
+            f->setBrightness(value);
+            chain->addFilter(f);
+        }
+        // Phase 4 will add: contrast, saturation
+    }
+    return chain;
+}
 
 extern "C" {
 
@@ -412,6 +438,111 @@ Java_com_fantasy_bridge_NativeBridge_nativeTestFilterChain(JNIEnv *env, jobject 
         return passed ? JNI_TRUE : JNI_FALSE;
     } catch (const std::exception& e) {
         FANTASY_LOGE(TAG, "FilterChain test exception: %s", e.what());
+        return JNI_FALSE;
+    }
+}
+
+JNIEXPORT jbyteArray JNICALL
+Java_com_fantasy_bridge_NativeBridge_nativeApplyFilters(
+    JNIEnv *env, jobject /* this */,
+    jbyteArray imageData, jint width, jint height, jstring filterConfig) {
+    try {
+        // 1. Copy input pixels
+        jsize len = env->GetArrayLength(imageData);
+        std::vector<uint8_t> inputPixels(len);
+        env->GetByteArrayRegion(imageData, 0, len, reinterpret_cast<jbyte*>(inputPixels.data()));
+
+        // 2. Parse filter config
+        const char* configStr = env->GetStringUTFChars(filterConfig, nullptr);
+        std::string config(configStr);
+        env->ReleaseStringUTFChars(filterConfig, configStr);
+
+        auto chain = parseFilterConfig(config);
+
+        // 3. Create EGL context + init shaders
+        EGLHelper egl;
+        RHIShader::clearRegistry();
+        RHIShader::registerBuiltins();
+
+        // 4. Create input texture
+        auto inputTex = RHITexture::create(inputPixels.data(), width, height, TextureFormat::RGBA8);
+
+        // 5. Apply filter chain
+        auto renderer = RHIRenderer::create();
+        auto outputTex = chain->apply(inputTex, renderer);
+
+        // 6. Read back pixels
+        std::vector<uint8_t> outputPixels(width * height * 4);
+        outputTex->readPixels(outputPixels.data());
+
+        // 7. Cleanup shaders before EGL context is destroyed
+        RHIShader::clearRegistry();
+
+        // 8. Return result byte[]
+        jbyteArray result = env->NewByteArray(outputPixels.size());
+        env->SetByteArrayRegion(result, 0, outputPixels.size(),
+                                reinterpret_cast<const jbyte*>(outputPixels.data()));
+        return result;
+
+    } catch (const std::exception& e) {
+        FANTASY_LOGE(TAG, "nativeApplyFilters exception: %s", e.what());
+        return nullptr;
+    }
+}
+
+JNIEXPORT jboolean JNICALL
+Java_com_fantasy_bridge_NativeBridge_nativeTestApplyFilters(JNIEnv *env, jobject thiz) {
+    try {
+        EGLHelper egl;
+        RHIShader::clearRegistry();
+        RHIShader::registerBuiltins();
+
+        using namespace fantasy::filter;
+
+        const int width = 2;
+        const int height = 2;
+
+        // Input: RGBA (100, 100, 100, 255)
+        std::vector<uint8_t> inputData(width * height * 4);
+        for (int i = 0; i < width * height; i++) {
+            inputData[i * 4 + 0] = 100;
+            inputData[i * 4 + 1] = 100;
+            inputData[i * 4 + 2] = 100;
+            inputData[i * 4 + 3] = 255;
+        }
+        auto inputTex = RHITexture::create(inputData.data(), width, height, TextureFormat::RGBA8);
+
+        // Build chain via parseFilterConfig
+        auto chain = parseFilterConfig("brightness:0.2");
+
+        auto renderer = RHIRenderer::create();
+        auto outputTex = chain->apply(inputTex, renderer);
+
+        std::vector<uint8_t> output(width * height * 4);
+        outputTex->readPixels(output.data());
+
+        // Verify: (100/255 + 0.2) * 255 ≈ 151, allow ±2
+        bool passed = true;
+        for (int i = 0; i < width * height; i++) {
+            uint8_t r = output[i * 4 + 0];
+            uint8_t g = output[i * 4 + 1];
+            uint8_t b = output[i * 4 + 2];
+            uint8_t a = output[i * 4 + 3];
+            int expected = 151;
+            if (std::abs(r - expected) > 2 || std::abs(g - expected) > 2 ||
+                std::abs(b - expected) > 2 || a != 255) {
+                FANTASY_LOGE(TAG, "nativeTestApplyFilters pixel %d: (%d,%d,%d,%d) expected ~(%d,%d,%d,255)",
+                    i, r, g, b, a, expected, expected, expected);
+                passed = false;
+                break;
+            }
+        }
+
+        RHIShader::clearRegistry();
+        FANTASY_LOGI(TAG, "nativeTestApplyFilters %s", passed ? "PASSED" : "FAILED");
+        return passed ? JNI_TRUE : JNI_FALSE;
+    } catch (const std::exception& e) {
+        FANTASY_LOGE(TAG, "nativeTestApplyFilters exception: %s", e.what());
         return JNI_FALSE;
     }
 }

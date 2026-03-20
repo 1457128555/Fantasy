@@ -17,4 +17,8 @@ class NativeBridge {
     external fun nativeTestBrightnessFilter(): Boolean
     external fun nativeTestBrightnessIdentity(): Boolean
     external fun nativeTestFilterChain(): Boolean
+    external fun nativeApplyFilters(
+        imageData: ByteArray, width: Int, height: Int, filterConfig: String
+    ): ByteArray?
+    external fun nativeTestApplyFilters(): Boolean
 }

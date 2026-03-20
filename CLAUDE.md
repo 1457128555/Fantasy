@@ -165,6 +165,6 @@ Fantasy/
 
 - [x] Phase 1 — RHI 层基础（已完成：Texture, Shader, VertexBuffer, VertexLayout, Framebuffer, UniformSet, Renderer, 完整 passthrough 管线验证通过）
 - [x] Phase 2 — Filter Framework 基础（已完成：FilterParam, Filter 基类, FilterChain, BrightnessFilter, 测试通过）
-- [ ] Phase 3 — JNI 桥接 + 预览
+- [x] Phase 3 — JNI 桥接 + 预览（已完成：nativeApplyFilters JNI 接口, EditorViewModel, 编辑器 UI, 内置图片 + 相册选图, 亮度滤镜预览）
 - [ ] Phase 4 — 补全基础滤镜
 - [ ] Phase 5 — 离屏导出
