@@ -124,19 +124,19 @@ Fantasy/
 3. 实现第一个滤镜：BrightnessFilter
 4. **测试点**：一张图片经过 BrightnessFilter 处理后像素值正确变化
 
-### Phase 3 — JNI 桥接 + 预览
+### Phase 3 — JNI 桥接 + 预览 ✅
 
-1. 实现 NativeBridge（JNI 接口，Java 传图片数据 + 滤镜配置）
-2. Android 侧加载图片，传 byte[] 到 C++，处理后返回结果
-3. PreviewView 显示处理后的图片
-4. **测试点**：选一张图片，加亮度滤镜，屏幕上看到效果
+1. ~~实现 NativeBridge（JNI 接口，Java 传图片数据 + 滤镜配置）~~ → `nativeApplyFilters`：接收 byte[] + config 字符串，C++ 侧创建 EGL 上下文 → FilterChain 渲染 → readPixels 返回
+2. ~~Android 侧加载图片，传 byte[] 到 C++，处理后返回结果~~ → EditorViewModel：图片加载（内置/相册）、EXIF 旋转、inSampleSize 降采样、1920px 长边缩放、100ms debounce + limitedParallelism(1) 线程安全
+3. ~~PreviewView 显示处理后的图片~~ → Compose UI：TopToolBar + ImagePreview + FilterPanel（滑条列表），EditorScreen 组合
+4. **测试点**：选一张图片，加亮度滤镜，屏幕上看到效果 ✅
 
-### Phase 4 — 补全基础滤镜
+### Phase 4 — 补全基础滤镜 ✅
 
-1. ContrastFilter
-2. SaturationFilter
-3. UI 上加滑条调参数
-4. **测试点**：多个滤镜链式叠加，参数实时调节
+1. ~~ContrastFilter~~ → 以 0.5 为中心缩放 RGB，[-1,1] 映射为乘数 [0,2]
+2. ~~SaturationFilter~~ → luminance 灰度混合，[-1,1] 映射为混合系数 [0,2]
+3. ~~UI 上加滑条调参数~~ → 三个滑条全部启用，链式叠加实时调参
+4. **测试点**：多个滤镜链式叠加，参数实时调节 ✅
 
 ### Phase 5 — 离屏导出
 

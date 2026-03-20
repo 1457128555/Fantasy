@@ -59,12 +59,20 @@ Fantasy/
 ├── app/                              # Android 应用层
 │   └── src/main/
 │       ├── java/com/fantasy/
-│       │   ├── MainActivity.kt
+│       │   ├── MainActivity.kt            # 主界面，PickVisualMedia + EditorScreen
 │       │   ├── bridge/
-│       │   │   └── NativeBridge.kt
+│       │   │   └── NativeBridge.kt        # JNI 接口声明
+│       │   ├── viewmodel/
+│       │   │   └── EditorViewModel.kt     # 图片加载、滤镜参数、debounce 渲染
 │       │   └── ui/
-│       │       └── PreviewView.kt
+│       │       ├── EditorScreen.kt        # 编辑器主界面 Composable
+│       │       └── components/
+│       │           ├── TopToolBar.kt      # 内置图片/相册选图按钮
+│       │           ├── ImagePreview.kt    # 图片预览 + loading 指示器
+│       │           └── FilterPanel.kt     # 滤镜参数滑条
 │       ├── res/
+│       │   └── drawable/
+│       │       └── builtin_sample.jpg     # 内置样例图
 │       └── AndroidManifest.xml
 │
 ├── native/                           # C++ 层
