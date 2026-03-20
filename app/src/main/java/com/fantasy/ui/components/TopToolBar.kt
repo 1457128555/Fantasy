@@ -2,6 +2,7 @@ package com.fantasy.ui.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
@@ -14,6 +15,9 @@ import androidx.compose.ui.unit.dp
 fun TopToolBar(
     onBuiltinClick: () -> Unit,
     onAlbumClick: () -> Unit,
+    onSaveClick: () -> Unit,
+    saveEnabled: Boolean,
+    isSaving: Boolean,
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -27,6 +31,13 @@ fun TopToolBar(
         }
         Button(onClick = onAlbumClick) {
             Text("从相册选")
+        }
+        Spacer(modifier = Modifier.weight(1f))
+        Button(
+            onClick = onSaveClick,
+            enabled = saveEnabled && !isSaving
+        ) {
+            Text(if (isSaving) "保存中..." else "保存")
         }
     }
 }

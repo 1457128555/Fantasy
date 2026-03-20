@@ -1,10 +1,14 @@
 package com.fantasy.viewmodel
 
+import android.content.ContentValues
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Matrix
 import android.net.Uri
+import android.os.Build
+import android.os.Environment
+import android.provider.MediaStore
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -49,9 +53,15 @@ class EditorViewModel : ViewModel() {
     private val _isProcessing = mutableStateOf(false)
     val isProcessing: State<Boolean> = _isProcessing
 
-    // Error events (consumed by UI as one-shot)
+    private val _isSaving = mutableStateOf(false)
+    val isSaving: State<Boolean> = _isSaving
+
+    // One-shot events
     private val _errorEvent = MutableSharedFlow<String>()
     val errorEvent: SharedFlow<String> = _errorEvent
+
+    private val _saveSuccessEvent = MutableSharedFlow<String>()
+    val saveSuccessEvent: SharedFlow<String> = _saveSuccessEvent
 
     // --- Internal cache ---
     private var cachedRgbaBytes: ByteArray? = null
@@ -115,7 +125,77 @@ class EditorViewModel : ViewModel() {
         requestRender()
     }
 
+    fun exportImage(context: Context) {
+        val bytes = cachedRgbaBytes ?: return
+        val w = cachedWidth
+        val h = cachedHeight
+
+        viewModelScope.launch {
+            _isSaving.value = true
+
+            val config = buildString {
+                appendLine("brightness:${_brightness.floatValue}")
+                appendLine("contrast:${_contrast.floatValue}")
+                appendLine("saturation:${_saturation.floatValue}")
+            }
+
+            val result = withContext(renderDispatcher) {
+                bridge.nativeApplyFilters(bytes, w, h, config)
+            }
+
+            if (result != null) {
+                val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+                bmp.copyPixelsFromBuffer(ByteBuffer.wrap(result))
+
+                val saved = withContext(Dispatchers.IO) {
+                    saveToGallery(context, bmp)
+                }
+
+                if (saved) {
+                    _saveSuccessEvent.emit("已保存到相册")
+                } else {
+                    _errorEvent.emit("保存失败")
+                }
+            } else {
+                _errorEvent.emit("处理失败")
+            }
+
+            _isSaving.value = false
+        }
+    }
+
     // --- Internal ---
+
+    private fun saveToGallery(context: Context, bitmap: Bitmap): Boolean {
+        val filename = "Fantasy_${System.currentTimeMillis()}.jpg"
+        val contentValues = ContentValues().apply {
+            put(MediaStore.Images.Media.DISPLAY_NAME, filename)
+            put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/Fantasy")
+                put(MediaStore.Images.Media.IS_PENDING, 1)
+            }
+        }
+
+        val resolver = context.contentResolver
+        val uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
+            ?: return false
+
+        return try {
+            resolver.openOutputStream(uri)?.use { out ->
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 95, out)
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                contentValues.clear()
+                contentValues.put(MediaStore.Images.Media.IS_PENDING, 0)
+                resolver.update(uri, contentValues, null, null)
+            }
+            true
+        } catch (_: Exception) {
+            resolver.delete(uri, null, null)
+            false
+        }
+    }
 
     private fun onBitmapLoaded(bitmap: Bitmap) {
         _originalBitmap.value = bitmap

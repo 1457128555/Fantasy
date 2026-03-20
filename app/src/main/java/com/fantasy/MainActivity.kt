@@ -1,6 +1,7 @@
 package com.fantasy
 
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -9,6 +10,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.fantasy.ui.EditorScreen
@@ -32,6 +34,18 @@ class MainActivity : ComponentActivity() {
         setContent {
             FantasyTheme {
                 editorViewModel = viewModel()
+
+                LaunchedEffect(Unit) {
+                    editorViewModel.saveSuccessEvent.collect { msg ->
+                        Toast.makeText(this@MainActivity, msg, Toast.LENGTH_SHORT).show()
+                    }
+                }
+                LaunchedEffect(Unit) {
+                    editorViewModel.errorEvent.collect { msg ->
+                        Toast.makeText(this@MainActivity, msg, Toast.LENGTH_SHORT).show()
+                    }
+                }
+
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     EditorScreen(
                         viewModel = editorViewModel,
@@ -41,6 +55,7 @@ class MainActivity : ComponentActivity() {
                                 PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
                             )
                         },
+                        onSaveClick = { editorViewModel.exportImage(this@MainActivity) },
                         modifier = Modifier.padding(innerPadding)
                     )
                 }

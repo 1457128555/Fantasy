@@ -175,4 +175,4 @@ Fantasy/
 - [x] Phase 2 — Filter Framework 基础（已完成：FilterParam, Filter 基类, FilterChain, BrightnessFilter, 测试通过）
 - [x] Phase 3 — JNI 桥接 + 预览（已完成：nativeApplyFilters JNI 接口, EditorViewModel, 编辑器 UI, 内置图片 + 相册选图, 亮度滤镜预览）
 - [x] Phase 4 — 补全基础滤镜（已完成：ContrastFilter, SaturationFilter, UI 滑条全部启用, 多滤镜链式叠加实时调参）
-- [ ] Phase 5 — 离屏导出
+- [x] Phase 5 — 离屏导出（已完成：exportImage 全分辨率离屏渲染, MediaStore 保存到相册, Toast 反馈）

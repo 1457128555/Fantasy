@@ -138,8 +138,8 @@ Fantasy/
 3. ~~UI 上加滑条调参数~~ → 三个滑条全部启用，链式叠加实时调参
 4. **测试点**：多个滤镜链式叠加，参数实时调节 ✅
 
-### Phase 5 — 离屏导出
+### Phase 5 — 离屏导出 ✅
 
-1. 离屏渲染输出 Bitmap
-2. 保存到相册
-3. **测试点**：导出的图片滤镜效果与预览一致
+1. ~~离屏渲染输出 Bitmap~~ → `exportImage()` 用当前参数对缓存的全分辨率 RGBA byte[] 调用 `nativeApplyFilters`，结果转 Bitmap
+2. ~~保存到相册~~ → 通过 MediaStore API 写入 Pictures/Fantasy 目录，JPEG 95% 质量，支持 Android Q+ IS_PENDING 原子写入
+3. **测试点**：导出的图片滤镜效果与预览一致 ✅

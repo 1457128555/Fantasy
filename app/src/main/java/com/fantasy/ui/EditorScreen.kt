@@ -17,10 +17,12 @@ fun EditorScreen(
     viewModel: EditorViewModel,
     onBuiltinClick: () -> Unit,
     onPickFromAlbum: () -> Unit,
+    onSaveClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val previewBitmap by viewModel.previewBitmap
     val isProcessing by viewModel.isProcessing
+    val isSaving by viewModel.isSaving
     val brightness by viewModel.brightness
     val contrast by viewModel.contrast
     val saturation by viewModel.saturation
@@ -29,7 +31,10 @@ fun EditorScreen(
     Column(modifier = modifier.fillMaxSize()) {
         TopToolBar(
             onBuiltinClick = onBuiltinClick,
-            onAlbumClick = onPickFromAlbum
+            onAlbumClick = onPickFromAlbum,
+            onSaveClick = onSaveClick,
+            saveEnabled = hasImage,
+            isSaving = isSaving
         )
 
         ImagePreview(
