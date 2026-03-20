@@ -105,6 +105,16 @@ class EditorViewModel : ViewModel() {
         requestRender()
     }
 
+    fun updateContrast(value: Float) {
+        _contrast.floatValue = value
+        requestRender()
+    }
+
+    fun updateSaturation(value: Float) {
+        _saturation.floatValue = value
+        requestRender()
+    }
+
     // --- Internal ---
 
     private fun onBitmapLoaded(bitmap: Bitmap) {

@@ -2,6 +2,8 @@ add_library(filter STATIC
     src/Filter.cpp
     src/FilterChain.cpp
     src/filters/BrightnessFilter.cpp
+    src/filters/ContrastFilter.cpp
+    src/filters/SaturationFilter.cpp
 )
 
 target_include_directories(filter PUBLIC include)

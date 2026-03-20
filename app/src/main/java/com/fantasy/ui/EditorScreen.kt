@@ -49,14 +49,14 @@ fun EditorScreen(
                 FilterSliderConfig(
                     label = "对比度",
                     value = contrast,
-                    onValueChange = { },
-                    enabled = false
+                    onValueChange = { viewModel.updateContrast(it) },
+                    enabled = hasImage
                 ),
                 FilterSliderConfig(
                     label = "饱和度",
                     value = saturation,
-                    onValueChange = { },
-                    enabled = false
+                    onValueChange = { viewModel.updateSaturation(it) },
+                    enabled = hasImage
                 )
             )
         )

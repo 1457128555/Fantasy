@@ -17,6 +17,8 @@
 #include "filter/FilterChain.h"
 #include "filter/FilterParam.h"
 #include "filter/filters/BrightnessFilter.h"
+#include "filter/filters/ContrastFilter.h"
+#include "filter/filters/SaturationFilter.h"
 
 #define TAG "FantasyBridge"
 
@@ -41,8 +43,15 @@ static std::shared_ptr<fantasy::filter::FilterChain> parseFilterConfig(const std
             auto f = std::make_shared<BrightnessFilter>();
             f->setBrightness(value);
             chain->addFilter(f);
+        } else if (name == "contrast") {
+            auto f = std::make_shared<ContrastFilter>();
+            f->setContrast(value);
+            chain->addFilter(f);
+        } else if (name == "saturation") {
+            auto f = std::make_shared<SaturationFilter>();
+            f->setSaturation(value);
+            chain->addFilter(f);
         }
-        // Phase 4 will add: contrast, saturation
     }
     return chain;
 }
