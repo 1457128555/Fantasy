@@ -142,13 +142,19 @@ Fantasy/
 
 ## 开发阶段
 
-详见 PLAN.md。共 5 个 Phase：
+详见 PLAN.md。
 
 1. **Phase 1 — RHI 层基础**：搭建项目，实现 RHI 全部资源类型，验证 passthrough 渲染管线
 2. **Phase 2 — Filter Framework 基础**：滤镜基类、链式管线、BrightnessFilter
 3. **Phase 3 — JNI 桥接 + 预览**：打通 Java ↔ C++，屏幕上看到滤镜效果
 4. **Phase 4 — 补全基础滤镜**：Contrast、Saturation，UI 滑条调参
 5. **Phase 5 — 离屏导出**：离屏渲染输出 Bitmap，保存到相册
+6. **Phase 6 — GLSurfaceView 实时渲染**：持久 EGL 上下文 + GPU 直出屏幕
+7. **Phase 7 — LUT 滤镜**：3D LUT 预设风格（暖色/冷色/复古）
+8. **Phase 8 — 扩展滤镜**：锐化、模糊、暗角
+9. **Phase 9 — UI 分类 Tab**：滤镜面板按 预设/调色/效果 分类
+10. **Phase 10 — 裁剪 + 旋转**：手势拖拽裁剪框 + 90°旋转/自由旋转
+11. **Phase 11 — 撤销/重做**：参数快照栈，支持回退操作
 
 ## 编码规范
 
@@ -195,3 +201,6 @@ Fantasy/
 - [x] Phase 6 — GLSurfaceView 实时渲染（已完成：持久 EGL 上下文 + GPU 直出屏幕, RenderSession 管理渲染状态, 导出复用 GL 线程）
 - [x] Phase 7 — LUT 滤镜（已完成：3D LUT 2D atlas 查找, 暖色/冷色/复古预设, 强度可调, 与基础滤镜链式叠加）
 - [x] Phase 8 — 扩展滤镜（已完成：SharpenFilter 锐化, BlurFilter 模糊, VignetteFilter 暗角, UI 滑条, drawFrame Y翻转修正）
+- [x] Phase 9 — UI 分类 Tab（已完成：滤镜面板按 预设/调色/效果 分 Tab，固定高度避免切换跳动）
+- [ ] Phase 10 — 裁剪 + 旋转（手势拖拽裁剪框 + 90°旋转/自由旋转，vertex shader 变换，导出按裁剪区域输出）
+- [ ] Phase 11 — 撤销/重做（参数快照栈，纯 Kotlin 层实现）
