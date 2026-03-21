@@ -1,14 +1,24 @@
 package com.fantasy.ui
 
+import android.opengl.GLSurfaceView
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.fantasy.renderer.FantasyRenderer
 import com.fantasy.ui.components.FilterPanel
 import com.fantasy.ui.components.FilterSliderConfig
-import com.fantasy.ui.components.ImagePreview
+import com.fantasy.ui.components.GLPreview
 import com.fantasy.ui.components.TopToolBar
 import com.fantasy.viewmodel.EditorViewModel
 
@@ -20,13 +30,19 @@ fun EditorScreen(
     onSaveClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val previewBitmap by viewModel.previewBitmap
-    val isProcessing by viewModel.isProcessing
     val isSaving by viewModel.isSaving
     val brightness by viewModel.brightness
     val contrast by viewModel.contrast
     val saturation by viewModel.saturation
     val hasImage = viewModel.originalBitmap.value != null
+
+    val renderer = remember { FantasyRenderer() }
+    val glSurfaceViewState = remember { mutableStateOf<GLSurfaceView?>(null) }
+
+    LaunchedEffect(glSurfaceViewState.value) {
+        val view = glSurfaceViewState.value ?: return@LaunchedEffect
+        viewModel.bindRenderer(renderer, view)
+    }
 
     Column(modifier = modifier.fillMaxSize()) {
         TopToolBar(
@@ -37,11 +53,26 @@ fun EditorScreen(
             isSaving = isSaving
         )
 
-        ImagePreview(
-            bitmap = previewBitmap,
-            isProcessing = isProcessing,
-            modifier = Modifier.weight(1f)
-        )
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.surfaceVariant),
+            contentAlignment = Alignment.Center
+        ) {
+            if (hasImage) {
+                GLPreview(
+                    renderer = renderer,
+                    onSurfaceViewReady = { glSurfaceViewState.value = it },
+                    modifier = Modifier.fillMaxSize()
+                )
+            } else {
+                Text(
+                    text = "请选择一张图片",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
 
         FilterPanel(
             sliders = listOf(

@@ -21,4 +21,12 @@ class NativeBridge {
         imageData: ByteArray, width: Int, height: Int, filterConfig: String
     ): ByteArray?
     external fun nativeTestApplyFilters(): Boolean
+
+    // GLSurfaceView lifecycle
+    external fun nativeRendererInit()
+    external fun nativeSetImage(imageData: ByteArray, width: Int, height: Int)
+    external fun nativeSetFilterConfig(filterConfig: String)
+    external fun nativeDrawFrame(width: Int, height: Int)
+    external fun nativeExportImage(width: Int, height: Int): ByteArray?
+    external fun nativeRendererDestroy()
 }

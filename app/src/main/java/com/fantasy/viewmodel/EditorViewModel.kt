@@ -6,6 +6,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Matrix
 import android.net.Uri
+import android.opengl.GLSurfaceView
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
@@ -15,31 +16,19 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.exifinterface.media.ExifInterface
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.fantasy.bridge.NativeBridge
+import com.fantasy.renderer.FantasyRenderer
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.InputStream
 import java.nio.ByteBuffer
-
 class EditorViewModel : ViewModel() {
-
-    private val bridge = NativeBridge()
-
-    @OptIn(ExperimentalCoroutinesApi::class)
-    private val renderDispatcher = Dispatchers.Default.limitedParallelism(1)
 
     // --- Public state ---
     private val _originalBitmap = mutableStateOf<Bitmap?>(null)
     val originalBitmap: State<Bitmap?> = _originalBitmap
-
-    private val _previewBitmap = mutableStateOf<Bitmap?>(null)
-    val previewBitmap: State<Bitmap?> = _previewBitmap
 
     private val _brightness = mutableFloatStateOf(0f)
     val brightness: State<Float> = _brightness
@@ -49,9 +38,6 @@ class EditorViewModel : ViewModel() {
 
     private val _saturation = mutableFloatStateOf(0f)
     val saturation: State<Float> = _saturation
-
-    private val _isProcessing = mutableStateOf(false)
-    val isProcessing: State<Boolean> = _isProcessing
 
     private val _isSaving = mutableStateOf(false)
     val isSaving: State<Boolean> = _isSaving
@@ -67,10 +53,23 @@ class EditorViewModel : ViewModel() {
     private var cachedRgbaBytes: ByteArray? = null
     private var cachedWidth = 0
     private var cachedHeight = 0
-    private var renderJob: Job? = null
+
+    // --- Renderer binding ---
+    private var fantasyRenderer: FantasyRenderer? = null
+    private var glSurfaceView: GLSurfaceView? = null
 
     companion object {
         private const val MAX_LONG_EDGE = 1920
+    }
+
+    fun bindRenderer(renderer: FantasyRenderer, view: GLSurfaceView) {
+        fantasyRenderer = renderer
+        glSurfaceView = view
+        // If image was already loaded before binding, push it to renderer
+        cachedRgbaBytes?.let { bytes ->
+            renderer.setImage(bytes, cachedWidth, cachedHeight)
+            requestRender()
+        }
     }
 
     fun loadBuiltinImage(context: Context) {
@@ -126,21 +125,15 @@ class EditorViewModel : ViewModel() {
     }
 
     fun exportImage(context: Context) {
-        val bytes = cachedRgbaBytes ?: return
         val w = cachedWidth
         val h = cachedHeight
+        if (cachedRgbaBytes == null || w == 0 || h == 0) return
 
         viewModelScope.launch {
             _isSaving.value = true
 
-            val config = buildString {
-                appendLine("brightness:${_brightness.floatValue}")
-                appendLine("contrast:${_contrast.floatValue}")
-                appendLine("saturation:${_saturation.floatValue}")
-            }
-
-            val result = withContext(renderDispatcher) {
-                bridge.nativeApplyFilters(bytes, w, h, config)
+            val result = withContext(Dispatchers.IO) {
+                fantasyRenderer?.exportImage(w, h)
             }
 
             if (result != null) {
@@ -208,43 +201,17 @@ class EditorViewModel : ViewModel() {
         _brightness.floatValue = 0f
         _contrast.floatValue = 0f
         _saturation.floatValue = 0f
-        _previewBitmap.value = bitmap
+        fantasyRenderer?.setImage(buffer.array(), ensured.width, ensured.height)
+        requestRender()
     }
 
     private fun requestRender() {
-        renderJob?.cancel()
-        renderJob = viewModelScope.launch {
-            delay(100)
-            applyFilters()
-        }
-    }
-
-    private suspend fun applyFilters() {
-        val bytes = cachedRgbaBytes ?: return
-        val w = cachedWidth
-        val h = cachedHeight
-
-        _isProcessing.value = true
-
         val config = buildString {
             appendLine("brightness:${_brightness.floatValue}")
             appendLine("contrast:${_contrast.floatValue}")
             appendLine("saturation:${_saturation.floatValue}")
         }
-
-        val result = withContext(renderDispatcher) {
-            bridge.nativeApplyFilters(bytes, w, h, config)
-        }
-
-        if (result != null) {
-            val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
-            bmp.copyPixelsFromBuffer(ByteBuffer.wrap(result))
-            _previewBitmap.value = bmp
-        } else {
-            _errorEvent.emit("处理失败")
-        }
-
-        _isProcessing.value = false
+        fantasyRenderer?.setFilterConfig(config)
     }
 
     private fun scaleBitmap(bitmap: Bitmap): Bitmap {

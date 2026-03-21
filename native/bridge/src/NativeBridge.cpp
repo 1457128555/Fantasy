@@ -2,6 +2,7 @@
 #include <string>
 #include <vector>
 #include <sstream>
+#include <memory>
 #include <GLES3/gl3.h>
 #include "rhi/RHITexture.h"
 #include "rhi/RHIShader.h"
@@ -20,9 +21,14 @@
 #include "filter/filters/ContrastFilter.h"
 #include "filter/filters/SaturationFilter.h"
 
+#include "bridge/RenderSession.h"
+
 #define TAG "FantasyBridge"
 
 using namespace fantasy::rhi;
+
+// Global RenderSession for GLSurfaceView lifecycle
+static std::unique_ptr<fantasy::bridge::RenderSession> g_session;
 
 // Helper: parse "brightness:0.2\ncontrast:0.0\n..." into FilterChain
 static std::shared_ptr<fantasy::filter::FilterChain> parseFilterConfig(const std::string& config) {
@@ -553,6 +559,87 @@ Java_com_fantasy_bridge_NativeBridge_nativeTestApplyFilters(JNIEnv *env, jobject
     } catch (const std::exception& e) {
         FANTASY_LOGE(TAG, "nativeTestApplyFilters exception: %s", e.what());
         return JNI_FALSE;
+    }
+}
+
+// --- GLSurfaceView lifecycle JNI ---
+
+JNIEXPORT void JNICALL
+Java_com_fantasy_bridge_NativeBridge_nativeRendererInit(JNIEnv *env, jobject /* this */) {
+    try {
+        g_session = std::make_unique<fantasy::bridge::RenderSession>();
+        g_session->init();
+    } catch (const std::exception& e) {
+        FANTASY_LOGE(TAG, "nativeRendererInit exception: %s", e.what());
+    }
+}
+
+JNIEXPORT void JNICALL
+Java_com_fantasy_bridge_NativeBridge_nativeSetImage(JNIEnv *env, jobject /* this */,
+    jbyteArray imageData, jint width, jint height) {
+    try {
+        if (!g_session) return;
+        jsize len = env->GetArrayLength(imageData);
+        std::vector<uint8_t> pixels(len);
+        env->GetByteArrayRegion(imageData, 0, len, reinterpret_cast<jbyte*>(pixels.data()));
+        g_session->setImage(pixels.data(), width, height);
+    } catch (const std::exception& e) {
+        FANTASY_LOGE(TAG, "nativeSetImage exception: %s", e.what());
+    }
+}
+
+JNIEXPORT void JNICALL
+Java_com_fantasy_bridge_NativeBridge_nativeSetFilterConfig(JNIEnv *env, jobject /* this */,
+    jstring filterConfig) {
+    try {
+        if (!g_session) return;
+        const char* configStr = env->GetStringUTFChars(filterConfig, nullptr);
+        std::string config(configStr);
+        env->ReleaseStringUTFChars(filterConfig, configStr);
+        g_session->setFilterConfig(config);
+    } catch (const std::exception& e) {
+        FANTASY_LOGE(TAG, "nativeSetFilterConfig exception: %s", e.what());
+    }
+}
+
+JNIEXPORT void JNICALL
+Java_com_fantasy_bridge_NativeBridge_nativeDrawFrame(JNIEnv *env, jobject /* this */,
+    jint width, jint height) {
+    try {
+        if (!g_session) return;
+        g_session->drawFrame(width, height);
+    } catch (const std::exception& e) {
+        FANTASY_LOGE(TAG, "nativeDrawFrame exception: %s", e.what());
+    }
+}
+
+JNIEXPORT jbyteArray JNICALL
+Java_com_fantasy_bridge_NativeBridge_nativeExportImage(JNIEnv *env, jobject /* this */,
+    jint width, jint height) {
+    try {
+        if (!g_session) return nullptr;
+        auto pixels = g_session->exportImage(width, height);
+        if (pixels.empty()) return nullptr;
+
+        jbyteArray result = env->NewByteArray(pixels.size());
+        env->SetByteArrayRegion(result, 0, pixels.size(),
+                                reinterpret_cast<const jbyte*>(pixels.data()));
+        return result;
+    } catch (const std::exception& e) {
+        FANTASY_LOGE(TAG, "nativeExportImage exception: %s", e.what());
+        return nullptr;
+    }
+}
+
+JNIEXPORT void JNICALL
+Java_com_fantasy_bridge_NativeBridge_nativeRendererDestroy(JNIEnv *env, jobject /* this */) {
+    try {
+        if (g_session) {
+            g_session->destroy();
+            g_session.reset();
+        }
+    } catch (const std::exception& e) {
+        FANTASY_LOGE(TAG, "nativeRendererDestroy exception: %s", e.what());
     }
 }
 

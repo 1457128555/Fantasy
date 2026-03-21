@@ -15,6 +15,7 @@ public:
     virtual ~RHIRenderer() = default;
 
     virtual void beginPass(std::shared_ptr<RHIFramebuffer> target) = 0;
+    virtual void beginDefaultPass(int viewportW, int viewportH) = 0;
     virtual void endPass() = 0;
 
     virtual void setShader(std::shared_ptr<RHIShader> shader) = 0;

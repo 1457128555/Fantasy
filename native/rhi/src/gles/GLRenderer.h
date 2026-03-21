@@ -12,6 +12,7 @@ public:
     ~GLRenderer() override = default;
 
     void beginPass(std::shared_ptr<RHIFramebuffer> target) override;
+    void beginDefaultPass(int viewportW, int viewportH) override;
     void endPass() override;
 
     void setShader(std::shared_ptr<RHIShader> shader) override;

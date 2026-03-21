@@ -14,6 +14,14 @@ void GLRenderer::beginPass(std::shared_ptr<RHIFramebuffer> target) {
     }
 }
 
+void GLRenderer::beginDefaultPass(int viewportW, int viewportH) {
+    m_currentTarget = nullptr;
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glViewport(0, 0, viewportW, viewportH);
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+}
+
 void GLRenderer::endPass() {
     if (m_currentTarget) {
         m_currentTarget->unbind();

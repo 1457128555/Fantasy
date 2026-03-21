@@ -1,8 +1,10 @@
 add_library(fantasy_bridge SHARED
     src/NativeBridge.cpp
+    src/RenderSession.cpp
 )
 
 target_include_directories(fantasy_bridge PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${CMAKE_CURRENT_SOURCE_DIR}/../filter/include
 )
 
