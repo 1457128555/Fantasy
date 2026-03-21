@@ -2,12 +2,14 @@ package com.fantasy.ui
 
 import android.opengl.GLSurfaceView
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
@@ -21,6 +23,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.fantasy.renderer.FantasyRenderer
 import com.fantasy.renderer.LUTPresets
 import com.fantasy.ui.components.CropOverlay
@@ -49,6 +53,8 @@ fun EditorScreen(
     val vignette by viewModel.vignette
     val selectedPreset by viewModel.selectedPreset
     val lutStrength by viewModel.lutStrength
+    val canUndo by viewModel.canUndo
+    val canRedo by viewModel.canRedo
     val hasImage = viewModel.originalBitmap.value != null
     val isEditingCrop by viewModel.isEditingCrop
     val cropRect by viewModel.cropRect
@@ -101,6 +107,35 @@ fun EditorScreen(
                         modifier = Modifier.fillMaxSize()
                     )
                 }
+                // Floating undo/redo buttons at bottom-start
+                if (!isEditingCrop && (canUndo || canRedo)) {
+                    Row(
+                        modifier = Modifier
+                            .align(Alignment.BottomStart)
+                            .padding(12.dp)
+                    ) {
+                        Text(
+                            text = "↩",
+                            fontSize = 22.sp,
+                            color = androidx.compose.ui.graphics.Color.White.copy(
+                                alpha = if (canUndo) 0.9f else 0.3f
+                            ),
+                            modifier = Modifier
+                                .clickable(enabled = canUndo) { viewModel.undo() }
+                                .padding(8.dp)
+                        )
+                        Text(
+                            text = "↪",
+                            fontSize = 22.sp,
+                            color = androidx.compose.ui.graphics.Color.White.copy(
+                                alpha = if (canRedo) 0.9f else 0.3f
+                            ),
+                            modifier = Modifier
+                                .clickable(enabled = canRedo) { viewModel.redo() }
+                                .padding(8.dp)
+                        )
+                    }
+                }
             } else {
                 Text(
                     text = "请选择一张图片",
@@ -149,6 +184,8 @@ fun EditorScreen(
                                             label = "LUT 强度",
                                             value = lutStrength,
                                             onValueChange = { viewModel.updateLutStrength(it) },
+                                            onValueChangeStarted = { viewModel.beginParameterChange() },
+                                            onValueChangeFinished = { viewModel.commitParameterChange() },
                                             enabled = hasImage,
                                             valueRange = 0f..1f
                                         )
@@ -164,18 +201,24 @@ fun EditorScreen(
                                     label = "亮度",
                                     value = brightness,
                                     onValueChange = { viewModel.updateBrightness(it) },
+                                    onValueChangeStarted = { viewModel.beginParameterChange() },
+                                    onValueChangeFinished = { viewModel.commitParameterChange() },
                                     enabled = hasImage
                                 ),
                                 FilterSliderConfig(
                                     label = "对比度",
                                     value = contrast,
                                     onValueChange = { viewModel.updateContrast(it) },
+                                    onValueChangeStarted = { viewModel.beginParameterChange() },
+                                    onValueChangeFinished = { viewModel.commitParameterChange() },
                                     enabled = hasImage
                                 ),
                                 FilterSliderConfig(
                                     label = "饱和度",
                                     value = saturation,
                                     onValueChange = { viewModel.updateSaturation(it) },
+                                    onValueChangeStarted = { viewModel.beginParameterChange() },
+                                    onValueChangeFinished = { viewModel.commitParameterChange() },
                                     enabled = hasImage
                                 )
                             )
@@ -188,6 +231,8 @@ fun EditorScreen(
                                     label = "锐化",
                                     value = sharpness,
                                     onValueChange = { viewModel.updateSharpness(it) },
+                                    onValueChangeStarted = { viewModel.beginParameterChange() },
+                                    onValueChangeFinished = { viewModel.commitParameterChange() },
                                     enabled = hasImage,
                                     valueRange = 0f..1f
                                 ),
@@ -195,6 +240,8 @@ fun EditorScreen(
                                     label = "模糊",
                                     value = blur,
                                     onValueChange = { viewModel.updateBlur(it) },
+                                    onValueChangeStarted = { viewModel.beginParameterChange() },
+                                    onValueChangeFinished = { viewModel.commitParameterChange() },
                                     enabled = hasImage,
                                     valueRange = 0f..1f
                                 ),
@@ -202,6 +249,8 @@ fun EditorScreen(
                                     label = "暗角",
                                     value = vignette,
                                     onValueChange = { viewModel.updateVignette(it) },
+                                    onValueChangeStarted = { viewModel.beginParameterChange() },
+                                    onValueChangeFinished = { viewModel.commitParameterChange() },
                                     enabled = hasImage,
                                     valueRange = 0f..1f
                                 )

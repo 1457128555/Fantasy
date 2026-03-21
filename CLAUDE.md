@@ -207,4 +207,4 @@ Fantasy/
 - [x] Phase 8 — 扩展滤镜（已完成：SharpenFilter 锐化, BlurFilter 模糊, VignetteFilter 暗角, UI 滑条, drawFrame Y翻转修正）
 - [x] Phase 9 — UI 分类 Tab（已完成：滤镜面板按 预设/调色/效果 分 Tab，固定高度避免切换跳动）
 - [x] Phase 10 — 裁剪 + 旋转（已完成：CropRotateFilter UV 逆变换，CropOverlay 拖拽裁剪框，90°旋转+自由旋转，比例约束 自由/1:1/4:3/16:9，独立裁剪编辑模式，导出按裁剪尺寸输出）
-- [ ] Phase 11 — 撤销/重做（参数快照栈，纯 Kotlin 层实现）
+- [x] Phase 11 — 撤销/重做（已完成：EditorSnapshot 快照，双栈 undo/redo，滑条拖拽整段为一个 undo 单元，裁剪会话整体为一个 undo 单元，浮动透明箭头按钮）

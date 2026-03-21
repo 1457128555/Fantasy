@@ -35,6 +35,21 @@ enum class AspectRatioMode(val label: String, val ratio: Float?) {
     RATIO_16_9("16:9", 16f / 9f)
 }
 
+data class EditorSnapshot(
+    val brightness: Float,
+    val contrast: Float,
+    val saturation: Float,
+    val sharpness: Float,
+    val blur: Float,
+    val vignette: Float,
+    val selectedPreset: String,
+    val lutStrength: Float,
+    val cropRect: RectF,
+    val rotation90: Int,
+    val freeRotation: Float,
+    val aspectRatioMode: AspectRatioMode
+)
+
 class EditorViewModel : ViewModel() {
 
     // --- Public state ---
@@ -83,6 +98,17 @@ class EditorViewModel : ViewModel() {
 
     private val _isSaving = mutableStateOf(false)
     val isSaving: State<Boolean> = _isSaving
+
+    // Undo / Redo
+    private val undoStack = mutableListOf<EditorSnapshot>()
+    private val redoStack = mutableListOf<EditorSnapshot>()
+    private var pendingSnapshot: EditorSnapshot? = null
+
+    private val _canUndo = mutableStateOf(false)
+    val canUndo: State<Boolean> = _canUndo
+
+    private val _canRedo = mutableStateOf(false)
+    val canRedo: State<Boolean> = _canRedo
 
     // One-shot events
     private val _errorEvent = MutableSharedFlow<String>()
@@ -182,6 +208,7 @@ class EditorViewModel : ViewModel() {
     }
 
     fun selectPreset(preset: LUTPreset) {
+        pushCheckpoint()
         _selectedPreset.value = preset.name
         if (preset.generator != null) {
             _lutStrength.floatValue = 1f
@@ -202,15 +229,31 @@ class EditorViewModel : ViewModel() {
 
     // --- Crop & Rotation ---
 
+    private var cropEntrySnapshot: EditorSnapshot? = null
+
     fun enterCropMode() {
+        cropEntrySnapshot = captureSnapshot()
         _isEditingCrop.value = true
     }
 
     fun exitCropMode(apply: Boolean) {
         if (!apply) {
-            // Cancel: reset to previous committed crop
-            // (crop rect stays as-is since we edit in place)
+            // Cancel: restore crop/rotation state from entry
+            cropEntrySnapshot?.let {
+                _cropRect.value = RectF(it.cropRect)
+                _rotation90.intValue = it.rotation90
+                _freeRotation.floatValue = it.freeRotation
+                _aspectRatioMode.value = it.aspectRatioMode
+            }
+        } else {
+            // Apply: push undo checkpoint (the state before entering crop mode)
+            cropEntrySnapshot?.let {
+                undoStack.add(it)
+                redoStack.clear()
+                updateUndoRedoState()
+            }
         }
+        cropEntrySnapshot = null
         _isEditingCrop.value = false
         requestRender()
     }
@@ -221,6 +264,7 @@ class EditorViewModel : ViewModel() {
     }
 
     fun rotate90CW() {
+        if (!_isEditingCrop.value) pushCheckpoint()
         _rotation90.intValue = (_rotation90.intValue + 1) % 4
         // Reset crop to full image after rotation
         _cropRect.value = RectF(0f, 0f, 1f, 1f)
@@ -233,6 +277,7 @@ class EditorViewModel : ViewModel() {
     }
 
     fun setAspectRatioMode(mode: AspectRatioMode) {
+        if (!_isEditingCrop.value) pushCheckpoint()
         _aspectRatioMode.value = mode
         if (mode.ratio == null) {
             // FREE mode: reset to full image
@@ -317,6 +362,96 @@ class EditorViewModel : ViewModel() {
         }
     }
 
+    // --- Undo / Redo ---
+
+    private fun captureSnapshot() = EditorSnapshot(
+        brightness = _brightness.floatValue,
+        contrast = _contrast.floatValue,
+        saturation = _saturation.floatValue,
+        sharpness = _sharpness.floatValue,
+        blur = _blur.floatValue,
+        vignette = _vignette.floatValue,
+        selectedPreset = _selectedPreset.value,
+        lutStrength = _lutStrength.floatValue,
+        cropRect = RectF(_cropRect.value),
+        rotation90 = _rotation90.intValue,
+        freeRotation = _freeRotation.floatValue,
+        aspectRatioMode = _aspectRatioMode.value
+    )
+
+    private fun restoreSnapshot(s: EditorSnapshot) {
+        _brightness.floatValue = s.brightness
+        _contrast.floatValue = s.contrast
+        _saturation.floatValue = s.saturation
+        _sharpness.floatValue = s.sharpness
+        _blur.floatValue = s.blur
+        _vignette.floatValue = s.vignette
+        _lutStrength.floatValue = s.lutStrength
+        _cropRect.value = RectF(s.cropRect)
+        _rotation90.intValue = s.rotation90
+        _freeRotation.floatValue = s.freeRotation
+        _aspectRatioMode.value = s.aspectRatioMode
+
+        // Handle LUT preset change
+        if (s.selectedPreset != _selectedPreset.value) {
+            _selectedPreset.value = s.selectedPreset
+            if (s.selectedPreset != "None") {
+                val preset = com.fantasy.renderer.LUTPresets.presets.find { it.name == s.selectedPreset }
+                if (preset?.generator != null) {
+                    viewModelScope.launch {
+                        val lutData = withContext(Dispatchers.Default) { preset.generator.invoke() }
+                        fantasyRenderer?.setLUT(lutData, 512, 512)
+                        requestRender()
+                    }
+                    return
+                }
+            }
+        }
+        requestRender()
+    }
+
+    private fun updateUndoRedoState() {
+        _canUndo.value = undoStack.isNotEmpty()
+        _canRedo.value = redoStack.isNotEmpty()
+    }
+
+    private fun pushCheckpoint() {
+        undoStack.add(captureSnapshot())
+        redoStack.clear()
+        updateUndoRedoState()
+    }
+
+    /** Call at the START of a slider drag to save the "before" state */
+    fun beginParameterChange() {
+        if (pendingSnapshot == null) {
+            pendingSnapshot = captureSnapshot()
+        }
+    }
+
+    /** Call on slider onValueChangeFinished to commit the undo checkpoint */
+    fun commitParameterChange() {
+        pendingSnapshot?.let {
+            undoStack.add(it)
+            redoStack.clear()
+            updateUndoRedoState()
+        }
+        pendingSnapshot = null
+    }
+
+    fun undo() {
+        if (undoStack.isEmpty()) return
+        redoStack.add(captureSnapshot())
+        restoreSnapshot(undoStack.removeLast())
+        updateUndoRedoState()
+    }
+
+    fun redo() {
+        if (redoStack.isEmpty()) return
+        undoStack.add(captureSnapshot())
+        restoreSnapshot(redoStack.removeLast())
+        updateUndoRedoState()
+    }
+
     // --- Internal ---
 
     private fun saveToGallery(context: Context, bitmap: Bitmap): Boolean {
@@ -371,6 +506,10 @@ class EditorViewModel : ViewModel() {
         _freeRotation.floatValue = 0f
         _isEditingCrop.value = false
         _aspectRatioMode.value = AspectRatioMode.FREE
+        undoStack.clear()
+        redoStack.clear()
+        pendingSnapshot = null
+        updateUndoRedoState()
         fantasyRenderer?.setImage(buffer.array(), ensured.width, ensured.height)
         requestRender()
     }

@@ -17,6 +17,8 @@ data class FilterSliderConfig(
     val label: String,
     val value: Float,
     val onValueChange: (Float) -> Unit,
+    val onValueChangeStarted: (() -> Unit)? = null,
+    val onValueChangeFinished: (() -> Unit)? = null,
     val enabled: Boolean = true,
     val valueRange: ClosedFloatingPointRange<Float> = -1f..1f
 )
@@ -54,7 +56,11 @@ private fun FilterSliderRow(config: FilterSliderConfig) {
         )
         Slider(
             value = config.value,
-            onValueChange = config.onValueChange,
+            onValueChange = {
+                config.onValueChangeStarted?.invoke()
+                config.onValueChange(it)
+            },
+            onValueChangeFinished = config.onValueChangeFinished,
             valueRange = config.valueRange,
             enabled = config.enabled,
             modifier = Modifier.weight(1f)
