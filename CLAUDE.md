@@ -70,13 +70,13 @@ Fantasy/
 │       │   └── ui/
 │       │       ├── EditorScreen.kt        # 编辑器主界面 Composable
 │       │       └── components/
-│       │           ├── TopToolBar.kt      # 内置图片/相册选图按钮
+│       │           ├── TopToolBar.kt      # 顶部工具栏（内置图片/相册选图/保存）
 │       │           ├── GLPreview.kt       # GLSurfaceView Compose 封装
 │       │           ├── ImagePreview.kt    # 图片预览（已被 GLPreview 替代）
 │       │           ├── PresetPanel.kt     # LUT 预设横滑面板 + 强度滑条
 │       │           ├── FilterPanel.kt     # 滤镜参数滑条
 │       │           ├── CropOverlay.kt    # 裁剪框覆盖层（Canvas + 拖拽手势）
-│       │           └── CropToolBar.kt    # 裁剪工具栏（比例/旋转/确认取消）
+│       │           └── CropToolBar.kt    # 裁剪工具栏（比例/旋转，作为第4个Tab）
 │       ├── res/
 │       │   └── drawable/
 │       │       └── builtin_sample.jpg     # 内置样例图
@@ -156,7 +156,7 @@ Fantasy/
 6. **Phase 6 — GLSurfaceView 实时渲染**：持久 EGL 上下文 + GPU 直出屏幕
 7. **Phase 7 — LUT 滤镜**：3D LUT 预设风格（暖色/冷色/复古）
 8. **Phase 8 — 扩展滤镜**：锐化、模糊、暗角
-9. **Phase 9 — UI 分类 Tab**：滤镜面板按 预设/调色/效果 分类
+9. **Phase 9 — UI 分类 Tab**：滤镜面板按 预设/调色/效果/裁剪 分类
 10. **Phase 10 — 裁剪 + 旋转**：手势拖拽裁剪框 + 90°旋转/自由旋转
 11. **Phase 11 — 撤销/重做**：参数快照栈，支持回退操作
 
@@ -205,6 +205,6 @@ Fantasy/
 - [x] Phase 6 — GLSurfaceView 实时渲染（已完成：持久 EGL 上下文 + GPU 直出屏幕, RenderSession 管理渲染状态, 导出复用 GL 线程）
 - [x] Phase 7 — LUT 滤镜（已完成：3D LUT 2D atlas 查找, 暖色/冷色/复古预设, 强度可调, 与基础滤镜链式叠加）
 - [x] Phase 8 — 扩展滤镜（已完成：SharpenFilter 锐化, BlurFilter 模糊, VignetteFilter 暗角, UI 滑条, drawFrame Y翻转修正）
-- [x] Phase 9 — UI 分类 Tab（已完成：滤镜面板按 预设/调色/效果 分 Tab，固定高度避免切换跳动）
-- [x] Phase 10 — 裁剪 + 旋转（已完成：CropRotateFilter UV 逆变换，CropOverlay 拖拽裁剪框，90°旋转+自由旋转，比例约束 自由/1:1/4:3/16:9，独立裁剪编辑模式，导出按裁剪尺寸输出）
+- [x] Phase 9 — UI 分类 Tab（已完成：底部面板按 预设/调色/效果/裁剪 分 Tab，固定高度避免切换跳动）
+- [x] Phase 10 — 裁剪 + 旋转（已完成：CropRotateFilter UV 逆变换，CropOverlay 拖拽裁剪框，90°旋转+自由旋转，比例约束 自由/1:1/4:3/16:9，裁剪作为底部第4个Tab，切Tab自动应用，导出按裁剪尺寸输出）
 - [x] Phase 11 — 撤销/重做（已完成：EditorSnapshot 快照，双栈 undo/redo，滑条拖拽整段为一个 undo 单元，裁剪会话整体为一个 undo 单元，浮动透明箭头按钮）
