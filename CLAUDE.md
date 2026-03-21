@@ -40,7 +40,7 @@ GLES 3.0 实现
 
 - **拓扑结构**：纯链式 A → B → C，不支持 DAG
 - **参数系统**：统一 key-value 参数表（FilterParam），支持 float / int / vec 等类型
-- **滤镜**：亮度（Brightness）、对比度（Contrast）、饱和度（Saturation）、LUT、锐化（Sharpen）、模糊（Blur）、暗角（Vignette）
+- **滤镜**：亮度（Brightness）、对比度（Contrast）、饱和度（Saturation）、LUT、锐化（Sharpen）、模糊（Blur）、暗角（Vignette）、裁剪旋转（CropRotate）
 
 ### JNI 桥接层
 
@@ -74,7 +74,9 @@ Fantasy/
 │       │           ├── GLPreview.kt       # GLSurfaceView Compose 封装
 │       │           ├── ImagePreview.kt    # 图片预览（已被 GLPreview 替代）
 │       │           ├── PresetPanel.kt     # LUT 预设横滑面板 + 强度滑条
-│       │           └── FilterPanel.kt     # 滤镜参数滑条
+│       │           ├── FilterPanel.kt     # 滤镜参数滑条
+│       │           ├── CropOverlay.kt    # 裁剪框覆盖层（Canvas + 拖拽手势）
+│       │           └── CropToolBar.kt    # 裁剪工具栏（比例/旋转/确认取消）
 │       ├── res/
 │       │   └── drawable/
 │       │       └── builtin_sample.jpg     # 内置样例图
@@ -116,7 +118,8 @@ Fantasy/
 │   │   │       ├── LUTFilter.h          # 3D LUT 滤镜（2D atlas 查找）
 │   │   │       ├── SharpenFilter.h      # 锐化（Unsharp Mask）
 │   │   │       ├── BlurFilter.h         # 模糊（3×3 Gaussian）
-│   │   │       └── VignetteFilter.h     # 暗角
+│   │   │       ├── VignetteFilter.h     # 暗角
+│   │   │       └── CropRotateFilter.h   # 裁剪+旋转（UV 逆变换）
 │   │   └── src/
 │   │       ├── Filter.cpp
 │   │       ├── FilterChain.cpp
@@ -127,7 +130,8 @@ Fantasy/
 │   │           ├── LUTFilter.cpp
 │   │           ├── SharpenFilter.cpp
 │   │           ├── BlurFilter.cpp
-│   │           └── VignetteFilter.cpp
+│   │           ├── VignetteFilter.cpp
+│   │           └── CropRotateFilter.cpp
 │   │
 │   └── bridge/                       # JNI 桥接层
 │       ├── CMakeLists.txt
@@ -202,5 +206,5 @@ Fantasy/
 - [x] Phase 7 — LUT 滤镜（已完成：3D LUT 2D atlas 查找, 暖色/冷色/复古预设, 强度可调, 与基础滤镜链式叠加）
 - [x] Phase 8 — 扩展滤镜（已完成：SharpenFilter 锐化, BlurFilter 模糊, VignetteFilter 暗角, UI 滑条, drawFrame Y翻转修正）
 - [x] Phase 9 — UI 分类 Tab（已完成：滤镜面板按 预设/调色/效果 分 Tab，固定高度避免切换跳动）
-- [ ] Phase 10 — 裁剪 + 旋转（手势拖拽裁剪框 + 90°旋转/自由旋转，vertex shader 变换，导出按裁剪区域输出）
+- [x] Phase 10 — 裁剪 + 旋转（已完成：CropRotateFilter UV 逆变换，CropOverlay 拖拽裁剪框，90°旋转+自由旋转，比例约束 自由/1:1/4:3/16:9，独立裁剪编辑模式，导出按裁剪尺寸输出）
 - [ ] Phase 11 — 撤销/重做（参数快照栈，纯 Kotlin 层实现）

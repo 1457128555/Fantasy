@@ -8,6 +8,7 @@ add_library(filter STATIC
     src/filters/SharpenFilter.cpp
     src/filters/BlurFilter.cpp
     src/filters/VignetteFilter.cpp
+    src/filters/CropRotateFilter.cpp
 )
 
 target_include_directories(filter PUBLIC include)

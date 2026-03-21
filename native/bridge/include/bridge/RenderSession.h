@@ -15,6 +15,7 @@
 #include "filter/filters/SharpenFilter.h"
 #include "filter/filters/BlurFilter.h"
 #include "filter/filters/VignetteFilter.h"
+#include "filter/filters/CropRotateFilter.h"
 
 #include <memory>
 #include <string>

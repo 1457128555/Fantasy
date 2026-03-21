@@ -23,6 +23,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.fantasy.renderer.FantasyRenderer
 import com.fantasy.renderer.LUTPresets
+import com.fantasy.ui.components.CropOverlay
+import com.fantasy.ui.components.CropToolBar
 import com.fantasy.ui.components.FilterPanel
 import com.fantasy.ui.components.FilterSliderConfig
 import com.fantasy.ui.components.GLPreview
@@ -48,6 +50,11 @@ fun EditorScreen(
     val selectedPreset by viewModel.selectedPreset
     val lutStrength by viewModel.lutStrength
     val hasImage = viewModel.originalBitmap.value != null
+    val isEditingCrop by viewModel.isEditingCrop
+    val cropRect by viewModel.cropRect
+    val rotation90 by viewModel.rotation90
+    val freeRotation by viewModel.freeRotation
+    val aspectRatioMode by viewModel.aspectRatioMode
 
     val renderer = remember { FantasyRenderer() }
     val glSurfaceViewState = remember { mutableStateOf<GLSurfaceView?>(null) }
@@ -64,7 +71,9 @@ fun EditorScreen(
             onBuiltinClick = onBuiltinClick,
             onAlbumClick = onPickFromAlbum,
             onSaveClick = onSaveClick,
-            saveEnabled = hasImage,
+            onCropClick = { viewModel.enterCropMode() },
+            saveEnabled = hasImage && !isEditingCrop,
+            cropEnabled = hasImage && !isEditingCrop,
             isSaving = isSaving
         )
 
@@ -81,6 +90,17 @@ fun EditorScreen(
                     onSurfaceViewReady = { glSurfaceViewState.value = it },
                     modifier = Modifier.fillMaxSize()
                 )
+                if (isEditingCrop) {
+                    CropOverlay(
+                        cropRect = cropRect,
+                        imageWidth = viewModel.originalBitmap.value?.width ?: 1,
+                        imageHeight = viewModel.originalBitmap.value?.height ?: 1,
+                        rotation90 = rotation90,
+                        aspectRatioMode = aspectRatioMode,
+                        onCropRectChanged = { viewModel.updateCropRect(it) },
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
             } else {
                 Text(
                     text = "请选择一张图片",
@@ -89,91 +109,105 @@ fun EditorScreen(
             }
         }
 
-        TabRow(selectedTabIndex = selectedTab) {
-            tabTitles.forEachIndexed { index, title ->
-                Tab(
-                    selected = selectedTab == index,
-                    onClick = { selectedTab = index },
-                    text = { Text(title) }
+        if (isEditingCrop) {
+            Box(modifier = Modifier.height(160.dp).fillMaxWidth()) {
+                CropToolBar(
+                    aspectRatioMode = aspectRatioMode,
+                    freeRotation = freeRotation,
+                    onAspectRatioChanged = { viewModel.setAspectRatioMode(it) },
+                    onRotate90 = { viewModel.rotate90CW() },
+                    onFreeRotationChanged = { viewModel.updateFreeRotation(it) },
+                    onApply = { viewModel.exitCropMode(true) },
+                    onCancel = { viewModel.exitCropMode(false) }
                 )
             }
-        }
+        } else {
+            TabRow(selectedTabIndex = selectedTab) {
+                tabTitles.forEachIndexed { index, title ->
+                    Tab(
+                        selected = selectedTab == index,
+                        onClick = { selectedTab = index },
+                        text = { Text(title) }
+                    )
+                }
+            }
 
-        Box(modifier = Modifier.height(160.dp).fillMaxWidth()) {
-            when (selectedTab) {
-                0 -> {
-                    Column {
-                        PresetPanel(
-                            presets = LUTPresets.presets,
-                            selectedPreset = selectedPreset,
-                            enabled = hasImage,
-                            onPresetSelected = { viewModel.selectPreset(it) }
-                        )
-                        if (selectedPreset != "None") {
-                            FilterPanel(
-                                sliders = listOf(
-                                    FilterSliderConfig(
-                                        label = "LUT 强度",
-                                        value = lutStrength,
-                                        onValueChange = { viewModel.updateLutStrength(it) },
-                                        enabled = hasImage,
-                                        valueRange = 0f..1f
+            Box(modifier = Modifier.height(160.dp).fillMaxWidth()) {
+                when (selectedTab) {
+                    0 -> {
+                        Column {
+                            PresetPanel(
+                                presets = LUTPresets.presets,
+                                selectedPreset = selectedPreset,
+                                enabled = hasImage,
+                                onPresetSelected = { viewModel.selectPreset(it) }
+                            )
+                            if (selectedPreset != "None") {
+                                FilterPanel(
+                                    sliders = listOf(
+                                        FilterSliderConfig(
+                                            label = "LUT 强度",
+                                            value = lutStrength,
+                                            onValueChange = { viewModel.updateLutStrength(it) },
+                                            enabled = hasImage,
+                                            valueRange = 0f..1f
+                                        )
                                     )
                                 )
-                            )
+                            }
                         }
                     }
-                }
-                1 -> {
-                    FilterPanel(
-                        sliders = listOf(
-                            FilterSliderConfig(
-                                label = "亮度",
-                                value = brightness,
-                                onValueChange = { viewModel.updateBrightness(it) },
-                                enabled = hasImage
-                            ),
-                            FilterSliderConfig(
-                                label = "对比度",
-                                value = contrast,
-                                onValueChange = { viewModel.updateContrast(it) },
-                                enabled = hasImage
-                            ),
-                            FilterSliderConfig(
-                                label = "饱和度",
-                                value = saturation,
-                                onValueChange = { viewModel.updateSaturation(it) },
-                                enabled = hasImage
+                    1 -> {
+                        FilterPanel(
+                            sliders = listOf(
+                                FilterSliderConfig(
+                                    label = "亮度",
+                                    value = brightness,
+                                    onValueChange = { viewModel.updateBrightness(it) },
+                                    enabled = hasImage
+                                ),
+                                FilterSliderConfig(
+                                    label = "对比度",
+                                    value = contrast,
+                                    onValueChange = { viewModel.updateContrast(it) },
+                                    enabled = hasImage
+                                ),
+                                FilterSliderConfig(
+                                    label = "饱和度",
+                                    value = saturation,
+                                    onValueChange = { viewModel.updateSaturation(it) },
+                                    enabled = hasImage
+                                )
                             )
                         )
-                    )
-                }
-                2 -> {
-                    FilterPanel(
-                        sliders = listOf(
-                            FilterSliderConfig(
-                                label = "锐化",
-                                value = sharpness,
-                                onValueChange = { viewModel.updateSharpness(it) },
-                                enabled = hasImage,
-                                valueRange = 0f..1f
-                            ),
-                            FilterSliderConfig(
-                                label = "模糊",
-                                value = blur,
-                                onValueChange = { viewModel.updateBlur(it) },
-                                enabled = hasImage,
-                                valueRange = 0f..1f
-                            ),
-                            FilterSliderConfig(
-                                label = "暗角",
-                                value = vignette,
-                                onValueChange = { viewModel.updateVignette(it) },
-                                enabled = hasImage,
-                                valueRange = 0f..1f
+                    }
+                    2 -> {
+                        FilterPanel(
+                            sliders = listOf(
+                                FilterSliderConfig(
+                                    label = "锐化",
+                                    value = sharpness,
+                                    onValueChange = { viewModel.updateSharpness(it) },
+                                    enabled = hasImage,
+                                    valueRange = 0f..1f
+                                ),
+                                FilterSliderConfig(
+                                    label = "模糊",
+                                    value = blur,
+                                    onValueChange = { viewModel.updateBlur(it) },
+                                    enabled = hasImage,
+                                    valueRange = 0f..1f
+                                ),
+                                FilterSliderConfig(
+                                    label = "暗角",
+                                    value = vignette,
+                                    onValueChange = { viewModel.updateVignette(it) },
+                                    enabled = hasImage,
+                                    valueRange = 0f..1f
+                                )
                             )
                         )
-                    )
+                    }
                 }
             }
         }

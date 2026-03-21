@@ -68,8 +68,8 @@ void RenderSession::drawFrame(int viewW, int viewH) {
     // Apply filter chain -> output texture
     auto outputTex = m_chain->apply(m_inputTexture, m_renderer);
 
-    // Compute aspect-ratio letterbox viewport
-    float imageAspect = static_cast<float>(m_imageWidth) / m_imageHeight;
+    // Compute aspect-ratio letterbox viewport (use output texture size, may differ after crop)
+    float imageAspect = static_cast<float>(outputTex->getWidth()) / outputTex->getHeight();
     float viewAspect = static_cast<float>(viewW) / viewH;
 
     int vpX, vpY, vpW, vpH;
@@ -124,7 +124,10 @@ std::vector<uint8_t> RenderSession::exportImage(int w, int h) {
 
     auto outputTex = m_chain->apply(m_inputTexture, m_renderer);
 
-    std::vector<uint8_t> pixels(w * h * 4);
+    // Use actual output texture dimensions (may differ from input after crop/rotate)
+    int outW = outputTex->getWidth();
+    int outH = outputTex->getHeight();
+    std::vector<uint8_t> pixels(outW * outH * 4);
     outputTex->readPixels(pixels.data());
     return pixels;
 }
@@ -143,9 +146,43 @@ std::shared_ptr<filter::FilterChain> RenderSession::parseFilterConfig(
     const std::string& config, std::shared_ptr<rhi::RHITexture> lutTexture) {
     auto chain = std::make_shared<filter::FilterChain>();
 
+    // First pass: collect crop/rotation params
+    float cropX = 0.0f, cropY = 0.0f, cropW = 1.0f, cropH = 1.0f;
+    int rotation90 = 0;
+    float freeRotation = 0.0f;
+
     std::istringstream stream(config);
     std::string line;
     while (std::getline(stream, line)) {
+        if (line.empty()) continue;
+        auto colonPos = line.find(':');
+        if (colonPos == std::string::npos) continue;
+
+        std::string name = line.substr(0, colonPos);
+        float value = std::stof(line.substr(colonPos + 1));
+
+        if (name == "crop_x") cropX = value;
+        else if (name == "crop_y") cropY = value;
+        else if (name == "crop_w") cropW = value;
+        else if (name == "crop_h") cropH = value;
+        else if (name == "rotation90") rotation90 = static_cast<int>(value);
+        else if (name == "free_rotation") freeRotation = value;
+    }
+
+    // Insert CropRotateFilter at head if any transform is active
+    bool hasCrop = (cropX != 0.0f || cropY != 0.0f || cropW != 1.0f || cropH != 1.0f);
+    bool hasRotation = (rotation90 != 0 || freeRotation != 0.0f);
+    if (hasCrop || hasRotation) {
+        auto cropFilter = std::make_shared<filter::CropRotateFilter>();
+        cropFilter->setCropRect(cropX, cropY, cropW, cropH);
+        cropFilter->setRotation90(rotation90);
+        cropFilter->setFreeRotation(freeRotation);
+        chain->addFilter(cropFilter);
+    }
+
+    // Second pass: other filters
+    std::istringstream stream2(config);
+    while (std::getline(stream2, line)) {
         if (line.empty()) continue;
         auto colonPos = line.find(':');
         if (colonPos == std::string::npos) continue;
