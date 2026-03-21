@@ -6,13 +6,19 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.ui.unit.dp
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.fantasy.renderer.FantasyRenderer
@@ -45,6 +51,8 @@ fun EditorScreen(
 
     val renderer = remember { FantasyRenderer() }
     val glSurfaceViewState = remember { mutableStateOf<GLSurfaceView?>(null) }
+    var selectedTab by remember { mutableIntStateOf(0) }
+    val tabTitles = listOf("预设", "调色", "效果")
 
     LaunchedEffect(glSurfaceViewState.value) {
         val view = glSurfaceViewState.value ?: return@LaunchedEffect
@@ -81,62 +89,93 @@ fun EditorScreen(
             }
         }
 
-        PresetPanel(
-            presets = LUTPresets.presets,
-            selectedPreset = selectedPreset,
-            enabled = hasImage,
-            onPresetSelected = { viewModel.selectPreset(it) }
-        )
-
-        FilterPanel(
-            sliders = listOfNotNull(
-                if (selectedPreset != "None") FilterSliderConfig(
-                    label = "LUT 强度",
-                    value = lutStrength,
-                    onValueChange = { viewModel.updateLutStrength(it) },
-                    enabled = hasImage,
-                    valueRange = 0f..1f
-                ) else null,
-                FilterSliderConfig(
-                    label = "亮度",
-                    value = brightness,
-                    onValueChange = { viewModel.updateBrightness(it) },
-                    enabled = hasImage
-                ),
-                FilterSliderConfig(
-                    label = "对比度",
-                    value = contrast,
-                    onValueChange = { viewModel.updateContrast(it) },
-                    enabled = hasImage
-                ),
-                FilterSliderConfig(
-                    label = "饱和度",
-                    value = saturation,
-                    onValueChange = { viewModel.updateSaturation(it) },
-                    enabled = hasImage
-                ),
-                FilterSliderConfig(
-                    label = "锐化",
-                    value = sharpness,
-                    onValueChange = { viewModel.updateSharpness(it) },
-                    enabled = hasImage,
-                    valueRange = 0f..1f
-                ),
-                FilterSliderConfig(
-                    label = "模糊",
-                    value = blur,
-                    onValueChange = { viewModel.updateBlur(it) },
-                    enabled = hasImage,
-                    valueRange = 0f..1f
-                ),
-                FilterSliderConfig(
-                    label = "暗角",
-                    value = vignette,
-                    onValueChange = { viewModel.updateVignette(it) },
-                    enabled = hasImage,
-                    valueRange = 0f..1f
+        TabRow(selectedTabIndex = selectedTab) {
+            tabTitles.forEachIndexed { index, title ->
+                Tab(
+                    selected = selectedTab == index,
+                    onClick = { selectedTab = index },
+                    text = { Text(title) }
                 )
-            )
-        )
+            }
+        }
+
+        Box(modifier = Modifier.height(160.dp).fillMaxWidth()) {
+            when (selectedTab) {
+                0 -> {
+                    Column {
+                        PresetPanel(
+                            presets = LUTPresets.presets,
+                            selectedPreset = selectedPreset,
+                            enabled = hasImage,
+                            onPresetSelected = { viewModel.selectPreset(it) }
+                        )
+                        if (selectedPreset != "None") {
+                            FilterPanel(
+                                sliders = listOf(
+                                    FilterSliderConfig(
+                                        label = "LUT 强度",
+                                        value = lutStrength,
+                                        onValueChange = { viewModel.updateLutStrength(it) },
+                                        enabled = hasImage,
+                                        valueRange = 0f..1f
+                                    )
+                                )
+                            )
+                        }
+                    }
+                }
+                1 -> {
+                    FilterPanel(
+                        sliders = listOf(
+                            FilterSliderConfig(
+                                label = "亮度",
+                                value = brightness,
+                                onValueChange = { viewModel.updateBrightness(it) },
+                                enabled = hasImage
+                            ),
+                            FilterSliderConfig(
+                                label = "对比度",
+                                value = contrast,
+                                onValueChange = { viewModel.updateContrast(it) },
+                                enabled = hasImage
+                            ),
+                            FilterSliderConfig(
+                                label = "饱和度",
+                                value = saturation,
+                                onValueChange = { viewModel.updateSaturation(it) },
+                                enabled = hasImage
+                            )
+                        )
+                    )
+                }
+                2 -> {
+                    FilterPanel(
+                        sliders = listOf(
+                            FilterSliderConfig(
+                                label = "锐化",
+                                value = sharpness,
+                                onValueChange = { viewModel.updateSharpness(it) },
+                                enabled = hasImage,
+                                valueRange = 0f..1f
+                            ),
+                            FilterSliderConfig(
+                                label = "模糊",
+                                value = blur,
+                                onValueChange = { viewModel.updateBlur(it) },
+                                enabled = hasImage,
+                                valueRange = 0f..1f
+                            ),
+                            FilterSliderConfig(
+                                label = "暗角",
+                                value = vignette,
+                                onValueChange = { viewModel.updateVignette(it) },
+                                enabled = hasImage,
+                                valueRange = 0f..1f
+                            )
+                        )
+                    )
+                }
+            }
+        }
     }
 }
