@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -17,9 +16,7 @@ fun TopToolBar(
     onBuiltinClick: () -> Unit,
     onAlbumClick: () -> Unit,
     onSaveClick: () -> Unit,
-    onCropClick: () -> Unit,
     saveEnabled: Boolean,
-    cropEnabled: Boolean,
     isSaving: Boolean,
     modifier: Modifier = Modifier
 ) {
@@ -36,12 +33,6 @@ fun TopToolBar(
             Text("从相册选")
         }
         Spacer(modifier = Modifier.weight(1f))
-        OutlinedButton(
-            onClick = onCropClick,
-            enabled = cropEnabled
-        ) {
-            Text("裁剪")
-        }
         Button(
             onClick = onSaveClick,
             enabled = saveEnabled && !isSaving

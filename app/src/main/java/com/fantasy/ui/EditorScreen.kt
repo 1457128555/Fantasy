@@ -36,6 +36,8 @@ import com.fantasy.ui.components.PresetPanel
 import com.fantasy.ui.components.TopToolBar
 import com.fantasy.viewmodel.EditorViewModel
 
+private const val TAB_CROP = 3
+
 @Composable
 fun EditorScreen(
     viewModel: EditorViewModel,
@@ -65,7 +67,7 @@ fun EditorScreen(
     val renderer = remember { FantasyRenderer() }
     val glSurfaceViewState = remember { mutableStateOf<GLSurfaceView?>(null) }
     var selectedTab by remember { mutableIntStateOf(0) }
-    val tabTitles = listOf("预设", "调色", "效果")
+    val tabTitles = listOf("预设", "调色", "效果", "裁剪")
 
     LaunchedEffect(glSurfaceViewState.value) {
         val view = glSurfaceViewState.value ?: return@LaunchedEffect
@@ -77,9 +79,7 @@ fun EditorScreen(
             onBuiltinClick = onBuiltinClick,
             onAlbumClick = onPickFromAlbum,
             onSaveClick = onSaveClick,
-            onCropClick = { viewModel.enterCropMode() },
-            saveEnabled = hasImage && !isEditingCrop,
-            cropEnabled = hasImage && !isEditingCrop,
+            saveEnabled = hasImage && !isSaving,
             isSaving = isSaving
         )
 
@@ -144,119 +144,126 @@ fun EditorScreen(
             }
         }
 
-        if (isEditingCrop) {
-            Box(modifier = Modifier.height(160.dp).fillMaxWidth()) {
-                CropToolBar(
-                    aspectRatioMode = aspectRatioMode,
-                    freeRotation = freeRotation,
-                    onAspectRatioChanged = { viewModel.setAspectRatioMode(it) },
-                    onRotate90 = { viewModel.rotate90CW() },
-                    onFreeRotationChanged = { viewModel.updateFreeRotation(it) },
-                    onApply = { viewModel.exitCropMode(true) },
-                    onCancel = { viewModel.exitCropMode(false) }
-                )
-            }
-        } else {
-            TabRow(selectedTabIndex = selectedTab) {
-                tabTitles.forEachIndexed { index, title ->
-                    Tab(
-                        selected = selectedTab == index,
-                        onClick = { selectedTab = index },
-                        text = { Text(title) }
-                    )
-                }
-            }
-
-            Box(modifier = Modifier.height(160.dp).fillMaxWidth()) {
-                when (selectedTab) {
-                    0 -> {
-                        Column {
-                            PresetPanel(
-                                presets = LUTPresets.presets,
-                                selectedPreset = selectedPreset,
-                                enabled = hasImage,
-                                onPresetSelected = { viewModel.selectPreset(it) }
-                            )
-                            if (selectedPreset != "None") {
-                                FilterPanel(
-                                    sliders = listOf(
-                                        FilterSliderConfig(
-                                            label = "LUT 强度",
-                                            value = lutStrength,
-                                            onValueChange = { viewModel.updateLutStrength(it) },
-                                            onValueChangeStarted = { viewModel.beginParameterChange() },
-                                            onValueChangeFinished = { viewModel.commitParameterChange() },
-                                            enabled = hasImage,
-                                            valueRange = 0f..1f
-                                        )
-                                    )
-                                )
+        TabRow(selectedTabIndex = selectedTab) {
+            tabTitles.forEachIndexed { index, title ->
+                Tab(
+                    selected = selectedTab == index,
+                    onClick = {
+                        if (index != selectedTab) {
+                            // Leaving crop tab → auto-apply
+                            if (selectedTab == TAB_CROP) {
+                                viewModel.exitCropMode(true)
+                            }
+                            selectedTab = index
+                            // Entering crop tab
+                            if (index == TAB_CROP) {
+                                viewModel.enterCropMode()
                             }
                         }
-                    }
-                    1 -> {
-                        FilterPanel(
-                            sliders = listOf(
-                                FilterSliderConfig(
-                                    label = "亮度",
-                                    value = brightness,
-                                    onValueChange = { viewModel.updateBrightness(it) },
-                                    onValueChangeStarted = { viewModel.beginParameterChange() },
-                                    onValueChangeFinished = { viewModel.commitParameterChange() },
-                                    enabled = hasImage
-                                ),
-                                FilterSliderConfig(
-                                    label = "对比度",
-                                    value = contrast,
-                                    onValueChange = { viewModel.updateContrast(it) },
-                                    onValueChangeStarted = { viewModel.beginParameterChange() },
-                                    onValueChangeFinished = { viewModel.commitParameterChange() },
-                                    enabled = hasImage
-                                ),
-                                FilterSliderConfig(
-                                    label = "饱和度",
-                                    value = saturation,
-                                    onValueChange = { viewModel.updateSaturation(it) },
-                                    onValueChangeStarted = { viewModel.beginParameterChange() },
-                                    onValueChangeFinished = { viewModel.commitParameterChange() },
-                                    enabled = hasImage
+                    },
+                    text = { Text(title) }
+                )
+            }
+        }
+
+        Box(modifier = Modifier.height(160.dp).fillMaxWidth()) {
+            when (selectedTab) {
+                0 -> {
+                    Column {
+                        PresetPanel(
+                            presets = LUTPresets.presets,
+                            selectedPreset = selectedPreset,
+                            enabled = hasImage,
+                            onPresetSelected = { viewModel.selectPreset(it) }
+                        )
+                        if (selectedPreset != "None") {
+                            FilterPanel(
+                                sliders = listOf(
+                                    FilterSliderConfig(
+                                        label = "LUT 强度",
+                                        value = lutStrength,
+                                        onValueChange = { viewModel.updateLutStrength(it) },
+                                        onValueChangeStarted = { viewModel.beginParameterChange() },
+                                        onValueChangeFinished = { viewModel.commitParameterChange() },
+                                        enabled = hasImage,
+                                        valueRange = 0f..1f
+                                    )
                                 )
                             )
-                        )
+                        }
                     }
-                    2 -> {
-                        FilterPanel(
-                            sliders = listOf(
-                                FilterSliderConfig(
-                                    label = "锐化",
-                                    value = sharpness,
-                                    onValueChange = { viewModel.updateSharpness(it) },
-                                    onValueChangeStarted = { viewModel.beginParameterChange() },
-                                    onValueChangeFinished = { viewModel.commitParameterChange() },
-                                    enabled = hasImage,
-                                    valueRange = 0f..1f
-                                ),
-                                FilterSliderConfig(
-                                    label = "模糊",
-                                    value = blur,
-                                    onValueChange = { viewModel.updateBlur(it) },
-                                    onValueChangeStarted = { viewModel.beginParameterChange() },
-                                    onValueChangeFinished = { viewModel.commitParameterChange() },
-                                    enabled = hasImage,
-                                    valueRange = 0f..1f
-                                ),
-                                FilterSliderConfig(
-                                    label = "暗角",
-                                    value = vignette,
-                                    onValueChange = { viewModel.updateVignette(it) },
-                                    onValueChangeStarted = { viewModel.beginParameterChange() },
-                                    onValueChangeFinished = { viewModel.commitParameterChange() },
-                                    enabled = hasImage,
-                                    valueRange = 0f..1f
-                                )
+                }
+                1 -> {
+                    FilterPanel(
+                        sliders = listOf(
+                            FilterSliderConfig(
+                                label = "亮度",
+                                value = brightness,
+                                onValueChange = { viewModel.updateBrightness(it) },
+                                onValueChangeStarted = { viewModel.beginParameterChange() },
+                                onValueChangeFinished = { viewModel.commitParameterChange() },
+                                enabled = hasImage
+                            ),
+                            FilterSliderConfig(
+                                label = "对比度",
+                                value = contrast,
+                                onValueChange = { viewModel.updateContrast(it) },
+                                onValueChangeStarted = { viewModel.beginParameterChange() },
+                                onValueChangeFinished = { viewModel.commitParameterChange() },
+                                enabled = hasImage
+                            ),
+                            FilterSliderConfig(
+                                label = "饱和度",
+                                value = saturation,
+                                onValueChange = { viewModel.updateSaturation(it) },
+                                onValueChangeStarted = { viewModel.beginParameterChange() },
+                                onValueChangeFinished = { viewModel.commitParameterChange() },
+                                enabled = hasImage
                             )
                         )
-                    }
+                    )
+                }
+                2 -> {
+                    FilterPanel(
+                        sliders = listOf(
+                            FilterSliderConfig(
+                                label = "锐化",
+                                value = sharpness,
+                                onValueChange = { viewModel.updateSharpness(it) },
+                                onValueChangeStarted = { viewModel.beginParameterChange() },
+                                onValueChangeFinished = { viewModel.commitParameterChange() },
+                                enabled = hasImage,
+                                valueRange = 0f..1f
+                            ),
+                            FilterSliderConfig(
+                                label = "模糊",
+                                value = blur,
+                                onValueChange = { viewModel.updateBlur(it) },
+                                onValueChangeStarted = { viewModel.beginParameterChange() },
+                                onValueChangeFinished = { viewModel.commitParameterChange() },
+                                enabled = hasImage,
+                                valueRange = 0f..1f
+                            ),
+                            FilterSliderConfig(
+                                label = "暗角",
+                                value = vignette,
+                                onValueChange = { viewModel.updateVignette(it) },
+                                onValueChangeStarted = { viewModel.beginParameterChange() },
+                                onValueChangeFinished = { viewModel.commitParameterChange() },
+                                enabled = hasImage,
+                                valueRange = 0f..1f
+                            )
+                        )
+                    )
+                }
+                TAB_CROP -> {
+                    CropToolBar(
+                        aspectRatioMode = aspectRatioMode,
+                        freeRotation = freeRotation,
+                        onAspectRatioChanged = { viewModel.setAspectRatioMode(it) },
+                        onRotate90 = { viewModel.rotate90CW() },
+                        onFreeRotationChanged = { viewModel.updateFreeRotation(it) }
+                    )
                 }
             }
         }

@@ -5,10 +5,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -27,8 +25,6 @@ fun CropToolBar(
     onAspectRatioChanged: (AspectRatioMode) -> Unit,
     onRotate90: () -> Unit,
     onFreeRotationChanged: (Float) -> Unit,
-    onApply: () -> Unit,
-    onCancel: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -76,20 +72,6 @@ fun CropToolBar(
                 modifier = Modifier.width(48.dp),
                 style = MaterialTheme.typography.bodySmall
             )
-        }
-
-        // Apply / Cancel buttons
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.End
-        ) {
-            OutlinedButton(onClick = onCancel) {
-                Text("取消")
-            }
-            Spacer(modifier = Modifier.width(12.dp))
-            Button(onClick = onApply) {
-                Text("确定")
-            }
         }
     }
 }
