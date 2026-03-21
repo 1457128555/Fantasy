@@ -25,7 +25,7 @@ public:
 
     // 应用滤镜：输入纹理 → 输出纹理
     // renderer 由调用方（FilterChain）提供，保证复用
-    std::shared_ptr<rhi::RHITexture> apply(
+    virtual std::shared_ptr<rhi::RHITexture> apply(
         std::shared_ptr<rhi::RHITexture> input,
         std::shared_ptr<rhi::RHIRenderer> renderer);
 

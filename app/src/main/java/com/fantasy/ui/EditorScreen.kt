@@ -16,9 +16,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.fantasy.renderer.FantasyRenderer
+import com.fantasy.renderer.LUTPresets
 import com.fantasy.ui.components.FilterPanel
 import com.fantasy.ui.components.FilterSliderConfig
 import com.fantasy.ui.components.GLPreview
+import com.fantasy.ui.components.PresetPanel
 import com.fantasy.ui.components.TopToolBar
 import com.fantasy.viewmodel.EditorViewModel
 
@@ -34,6 +36,8 @@ fun EditorScreen(
     val brightness by viewModel.brightness
     val contrast by viewModel.contrast
     val saturation by viewModel.saturation
+    val selectedPreset by viewModel.selectedPreset
+    val lutStrength by viewModel.lutStrength
     val hasImage = viewModel.originalBitmap.value != null
 
     val renderer = remember { FantasyRenderer() }
@@ -74,8 +78,22 @@ fun EditorScreen(
             }
         }
 
+        PresetPanel(
+            presets = LUTPresets.presets,
+            selectedPreset = selectedPreset,
+            enabled = hasImage,
+            onPresetSelected = { viewModel.selectPreset(it) }
+        )
+
         FilterPanel(
-            sliders = listOf(
+            sliders = listOfNotNull(
+                if (selectedPreset != "None") FilterSliderConfig(
+                    label = "LUT 强度",
+                    value = lutStrength,
+                    onValueChange = { viewModel.updateLutStrength(it) },
+                    enabled = hasImage,
+                    valueRange = 0f..1f
+                ) else null,
                 FilterSliderConfig(
                     label = "亮度",
                     value = brightness,

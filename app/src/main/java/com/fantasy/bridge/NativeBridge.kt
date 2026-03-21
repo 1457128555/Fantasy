@@ -25,6 +25,7 @@ class NativeBridge {
     // GLSurfaceView lifecycle
     external fun nativeRendererInit()
     external fun nativeSetImage(imageData: ByteArray, width: Int, height: Int)
+    external fun nativeSetLUT(lutData: ByteArray, width: Int, height: Int)
     external fun nativeSetFilterConfig(filterConfig: String)
     external fun nativeDrawFrame(width: Int, height: Int)
     external fun nativeExportImage(width: Int, height: Int): ByteArray?

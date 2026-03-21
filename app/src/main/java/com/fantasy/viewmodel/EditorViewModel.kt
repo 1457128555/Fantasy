@@ -17,6 +17,8 @@ import androidx.exifinterface.media.ExifInterface
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.fantasy.renderer.FantasyRenderer
+import com.fantasy.renderer.LUTPreset
+import com.fantasy.renderer.LUTPresets
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -38,6 +40,12 @@ class EditorViewModel : ViewModel() {
 
     private val _saturation = mutableFloatStateOf(0f)
     val saturation: State<Float> = _saturation
+
+    private val _selectedPreset = mutableStateOf("None")
+    val selectedPreset: State<String> = _selectedPreset
+
+    private val _lutStrength = mutableFloatStateOf(1f)
+    val lutStrength: State<Float> = _lutStrength
 
     private val _isSaving = mutableStateOf(false)
     val isSaving: State<Boolean> = _isSaving
@@ -124,6 +132,25 @@ class EditorViewModel : ViewModel() {
         requestRender()
     }
 
+    fun selectPreset(preset: LUTPreset) {
+        _selectedPreset.value = preset.name
+        if (preset.generator != null) {
+            _lutStrength.floatValue = 1f
+            viewModelScope.launch {
+                val lutData = withContext(Dispatchers.Default) { preset.generator.invoke() }
+                fantasyRenderer?.setLUT(lutData, 512, 512)
+                requestRender()
+            }
+        } else {
+            requestRender()
+        }
+    }
+
+    fun updateLutStrength(value: Float) {
+        _lutStrength.floatValue = value
+        requestRender()
+    }
+
     fun exportImage(context: Context) {
         val w = cachedWidth
         val h = cachedHeight
@@ -201,12 +228,17 @@ class EditorViewModel : ViewModel() {
         _brightness.floatValue = 0f
         _contrast.floatValue = 0f
         _saturation.floatValue = 0f
+        _selectedPreset.value = "None"
+        _lutStrength.floatValue = 1f
         fantasyRenderer?.setImage(buffer.array(), ensured.width, ensured.height)
         requestRender()
     }
 
     private fun requestRender() {
         val config = buildString {
+            if (_selectedPreset.value != "None") {
+                appendLine("lut_strength:${_lutStrength.floatValue}")
+            }
             appendLine("brightness:${_brightness.floatValue}")
             appendLine("contrast:${_contrast.floatValue}")
             appendLine("saturation:${_saturation.floatValue}")

@@ -11,6 +11,7 @@
 #include "filter/filters/BrightnessFilter.h"
 #include "filter/filters/ContrastFilter.h"
 #include "filter/filters/SaturationFilter.h"
+#include "filter/filters/LUTFilter.h"
 
 #include <memory>
 #include <string>
@@ -27,12 +28,15 @@ public:
 
     void init();
     void setImage(const uint8_t* data, int w, int h);
+    void setLUT(const uint8_t* data, int w, int h);
     void setFilterConfig(const std::string& config);
     void drawFrame(int viewW, int viewH);
     std::vector<uint8_t> exportImage(int w, int h);
     void destroy();
 
-    static std::shared_ptr<filter::FilterChain> parseFilterConfig(const std::string& config);
+    static std::shared_ptr<filter::FilterChain> parseFilterConfig(
+        const std::string& config,
+        std::shared_ptr<rhi::RHITexture> lutTexture = nullptr);
 
 private:
     void rebuildChain();
@@ -40,6 +44,7 @@ private:
     std::shared_ptr<rhi::RHIRenderer> m_renderer;
     std::shared_ptr<rhi::RHIVertexBuffer> m_quadVBO;
     std::shared_ptr<rhi::RHITexture> m_inputTexture;
+    std::shared_ptr<rhi::RHITexture> m_lutTexture;
 
     int m_imageWidth = 0;
     int m_imageHeight = 0;

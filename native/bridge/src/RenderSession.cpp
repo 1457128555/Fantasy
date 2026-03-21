@@ -37,6 +37,11 @@ void RenderSession::setImage(const uint8_t* data, int w, int h) {
     FANTASY_LOGI(TAG, "Image uploaded: %dx%d", w, h);
 }
 
+void RenderSession::setLUT(const uint8_t* data, int w, int h) {
+    m_lutTexture = rhi::RHITexture::create(data, w, h, rhi::TextureFormat::RGBA8);
+    FANTASY_LOGI(TAG, "LUT uploaded: %dx%d", w, h);
+}
+
 void RenderSession::setFilterConfig(const std::string& config) {
     std::lock_guard<std::mutex> lock(m_configMutex);
     m_filterConfig = config;
@@ -51,7 +56,7 @@ void RenderSession::rebuildChain() {
         config = m_filterConfig;
         m_configDirty = false;
     }
-    m_chain = parseFilterConfig(config);
+    m_chain = parseFilterConfig(config, m_lutTexture);
 }
 
 void RenderSession::drawFrame(int viewW, int viewH) {
@@ -125,6 +130,7 @@ std::vector<uint8_t> RenderSession::exportImage(int w, int h) {
 
 void RenderSession::destroy() {
     m_chain.reset();
+    m_lutTexture.reset();
     m_inputTexture.reset();
     m_quadVBO.reset();
     m_renderer.reset();
@@ -132,7 +138,8 @@ void RenderSession::destroy() {
     FANTASY_LOGI(TAG, "RenderSession destroyed");
 }
 
-std::shared_ptr<filter::FilterChain> RenderSession::parseFilterConfig(const std::string& config) {
+std::shared_ptr<filter::FilterChain> RenderSession::parseFilterConfig(
+    const std::string& config, std::shared_ptr<rhi::RHITexture> lutTexture) {
     auto chain = std::make_shared<filter::FilterChain>();
 
     std::istringstream stream(config);
@@ -145,7 +152,12 @@ std::shared_ptr<filter::FilterChain> RenderSession::parseFilterConfig(const std:
         std::string name = line.substr(0, colonPos);
         float value = std::stof(line.substr(colonPos + 1));
 
-        if (name == "brightness") {
+        if (name == "lut_strength" && lutTexture) {
+            auto f = std::make_shared<filter::LUTFilter>();
+            f->setLUT(lutTexture);
+            f->setStrength(value);
+            chain->addFilter(f);
+        } else if (name == "brightness") {
             auto f = std::make_shared<filter::BrightnessFilter>();
             f->setBrightness(value);
             chain->addFilter(f);

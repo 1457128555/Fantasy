@@ -589,6 +589,20 @@ Java_com_fantasy_bridge_NativeBridge_nativeSetImage(JNIEnv *env, jobject /* this
 }
 
 JNIEXPORT void JNICALL
+Java_com_fantasy_bridge_NativeBridge_nativeSetLUT(JNIEnv *env, jobject /* this */,
+    jbyteArray lutData, jint width, jint height) {
+    try {
+        if (!g_session) return;
+        jsize len = env->GetArrayLength(lutData);
+        std::vector<uint8_t> pixels(len);
+        env->GetByteArrayRegion(lutData, 0, len, reinterpret_cast<jbyte*>(pixels.data()));
+        g_session->setLUT(pixels.data(), width, height);
+    } catch (const std::exception& e) {
+        FANTASY_LOGE(TAG, "nativeSetLUT exception: %s", e.what());
+    }
+}
+
+JNIEXPORT void JNICALL
 Java_com_fantasy_bridge_NativeBridge_nativeSetFilterConfig(JNIEnv *env, jobject /* this */,
     jstring filterConfig) {
     try {

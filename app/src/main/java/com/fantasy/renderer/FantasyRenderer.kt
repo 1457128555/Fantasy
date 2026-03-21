@@ -46,6 +46,13 @@ class FantasyRenderer : GLSurfaceView.Renderer {
         }
     }
 
+    fun setLUT(data: ByteArray, w: Int, h: Int) {
+        surfaceView?.queueEvent {
+            bridge.nativeSetLUT(data, w, h)
+            surfaceView?.requestRender()
+        }
+    }
+
     fun setFilterConfig(config: String) {
         bridge.nativeSetFilterConfig(config)
         surfaceView?.requestRender()
