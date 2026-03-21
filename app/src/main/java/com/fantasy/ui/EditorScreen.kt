@@ -36,6 +36,9 @@ fun EditorScreen(
     val brightness by viewModel.brightness
     val contrast by viewModel.contrast
     val saturation by viewModel.saturation
+    val sharpness by viewModel.sharpness
+    val blur by viewModel.blur
+    val vignette by viewModel.vignette
     val selectedPreset by viewModel.selectedPreset
     val lutStrength by viewModel.lutStrength
     val hasImage = viewModel.originalBitmap.value != null
@@ -111,6 +114,27 @@ fun EditorScreen(
                     value = saturation,
                     onValueChange = { viewModel.updateSaturation(it) },
                     enabled = hasImage
+                ),
+                FilterSliderConfig(
+                    label = "锐化",
+                    value = sharpness,
+                    onValueChange = { viewModel.updateSharpness(it) },
+                    enabled = hasImage,
+                    valueRange = 0f..1f
+                ),
+                FilterSliderConfig(
+                    label = "模糊",
+                    value = blur,
+                    onValueChange = { viewModel.updateBlur(it) },
+                    enabled = hasImage,
+                    valueRange = 0f..1f
+                ),
+                FilterSliderConfig(
+                    label = "暗角",
+                    value = vignette,
+                    onValueChange = { viewModel.updateVignette(it) },
+                    enabled = hasImage,
+                    valueRange = 0f..1f
                 )
             )
         )

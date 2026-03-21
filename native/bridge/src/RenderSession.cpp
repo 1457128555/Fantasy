@@ -14,11 +14,12 @@ void RenderSession::init() {
 
     m_renderer = rhi::RHIRenderer::create();
 
+    // texcoord Y 翻转：修正 Bitmap(top-first) 与 GL(bottom-first) 行序差异
     float quadVertices[] = {
-        -1.0f, -1.0f, 0.0f, 0.0f,
-         1.0f, -1.0f, 1.0f, 0.0f,
-        -1.0f,  1.0f, 0.0f, 1.0f,
-         1.0f,  1.0f, 1.0f, 1.0f,
+        -1.0f, -1.0f, 0.0f, 1.0f,
+         1.0f, -1.0f, 1.0f, 1.0f,
+        -1.0f,  1.0f, 0.0f, 0.0f,
+         1.0f,  1.0f, 1.0f, 0.0f,
     };
     rhi::RHIVertexLayout layout;
     layout.add("aPosition", rhi::VertexAttribType::Float2, 0)
@@ -168,6 +169,18 @@ std::shared_ptr<filter::FilterChain> RenderSession::parseFilterConfig(
         } else if (name == "saturation") {
             auto f = std::make_shared<filter::SaturationFilter>();
             f->setSaturation(value);
+            chain->addFilter(f);
+        } else if (name == "sharpness") {
+            auto f = std::make_shared<filter::SharpenFilter>();
+            f->setSharpness(value);
+            chain->addFilter(f);
+        } else if (name == "blur") {
+            auto f = std::make_shared<filter::BlurFilter>();
+            f->setBlurRadius(value);
+            chain->addFilter(f);
+        } else if (name == "vignette") {
+            auto f = std::make_shared<filter::VignetteFilter>();
+            f->setVignette(value);
             chain->addFilter(f);
         }
     }

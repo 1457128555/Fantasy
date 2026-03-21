@@ -143,3 +143,34 @@ Fantasy/
 1. ~~离屏渲染输出 Bitmap~~ → `exportImage()` 用当前参数对缓存的全分辨率 RGBA byte[] 调用 `nativeApplyFilters`，结果转 Bitmap
 2. ~~保存到相册~~ → 通过 MediaStore API 写入 Pictures/Fantasy 目录，JPEG 95% 质量，支持 Android Q+ IS_PENDING 原子写入
 3. **测试点**：导出的图片滤镜效果与预览一致 ✅
+
+### Phase 6 — GLSurfaceView 实时渲染 ✅
+
+用 GLSurfaceView 持久 EGL 上下文 + GPU 直出屏幕，替代旧的 readPixels+Bitmap 预览链路。
+
+1. ~~RHI 层新增 `beginDefaultPass`~~ → 渲染到默认帧缓冲（屏幕）
+2. ~~新增 `RenderSession` C++ 类~~ → 管理持久化 GL 渲染状态（纹理缓存、滤镜链复用）
+3. ~~新增 6 个 JNI 方法~~ → 支持 GLSurfaceView 生命周期（init / setImage / setFilter / render / export / destroy）
+4. ~~新增 `FantasyRenderer` + `GLPreview`~~ → GLSurfaceView.Renderer 实现 + Compose 封装
+5. ~~`EditorViewModel` 重构~~ → 去掉 debounce / previewBitmap / isProcessing，直接驱动 GL 渲染
+6. ~~导出改为 GL 线程离屏渲染~~ → 通过 `queueEvent` 复用同一 EGL 上下文
+7. **测试点**：滑条拖动实时跟手预览，无卡顿 ✅
+
+### Phase 7 — LUT 滤镜 ✅
+
+新增 LUT（Look-Up Table）滤镜，支持一键预设风格。
+
+1. ~~LUTFilter C++ 实现~~ → 3D LUT 以 2D atlas 存储，蓝色切片插值采样
+2. ~~Kotlin 侧代码生成 LUT 数据~~ → `LUTPresets` 生成 512x512 RGBA LUT（暖色 / 冷色 / 复古）
+3. ~~UI 横滑预设面板~~ → `PresetPanel` Composable + 强度滑条
+4. ~~LUT 滤镜插入链首~~ → 与亮度 / 对比度 / 饱和度叠加
+5. **测试点**：选择预设后一键切换风格，强度可调 ✅
+
+### Phase 8 — 扩展滤镜（锐化 / 模糊 / 暗角）✅
+
+1. ~~SharpenFilter~~ → 8 邻域 Laplacian 锐化，需要 texelSize，override apply()
+2. ~~BlurFilter~~ → 5×5 Box Blur，采样间距按 blurRadius 缩放（最大 20 texel），需要 texelSize，override apply()
+3. ~~VignetteFilter~~ → UV 到中心距离 + smoothstep 衰减，纯片段着色器，用基类 apply()
+4. ~~UI 滑条~~ → 锐化 / 模糊 / 暗角各 0~1 范围，参数为 0 时跳过滤镜不创建 pass
+5. ~~drawFrame Y 翻转~~ → 修正 Bitmap(top-first) 与 GL(bottom-first) 行序差异，仅上屏 blit 翻转 texcoord Y
+6. **测试点**：七个滤镜链式叠加，参数实时调节，预览与导出方向一致 ✅

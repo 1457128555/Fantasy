@@ -12,6 +12,9 @@
 #include "filter/filters/ContrastFilter.h"
 #include "filter/filters/SaturationFilter.h"
 #include "filter/filters/LUTFilter.h"
+#include "filter/filters/SharpenFilter.h"
+#include "filter/filters/BlurFilter.h"
+#include "filter/filters/VignetteFilter.h"
 
 #include <memory>
 #include <string>

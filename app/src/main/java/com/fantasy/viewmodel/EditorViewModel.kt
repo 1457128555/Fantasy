@@ -41,6 +41,15 @@ class EditorViewModel : ViewModel() {
     private val _saturation = mutableFloatStateOf(0f)
     val saturation: State<Float> = _saturation
 
+    private val _sharpness = mutableFloatStateOf(0f)
+    val sharpness: State<Float> = _sharpness
+
+    private val _blur = mutableFloatStateOf(0f)
+    val blur: State<Float> = _blur
+
+    private val _vignette = mutableFloatStateOf(0f)
+    val vignette: State<Float> = _vignette
+
     private val _selectedPreset = mutableStateOf("None")
     val selectedPreset: State<String> = _selectedPreset
 
@@ -129,6 +138,21 @@ class EditorViewModel : ViewModel() {
 
     fun updateSaturation(value: Float) {
         _saturation.floatValue = value
+        requestRender()
+    }
+
+    fun updateSharpness(value: Float) {
+        _sharpness.floatValue = value
+        requestRender()
+    }
+
+    fun updateBlur(value: Float) {
+        _blur.floatValue = value
+        requestRender()
+    }
+
+    fun updateVignette(value: Float) {
+        _vignette.floatValue = value
         requestRender()
     }
 
@@ -228,6 +252,9 @@ class EditorViewModel : ViewModel() {
         _brightness.floatValue = 0f
         _contrast.floatValue = 0f
         _saturation.floatValue = 0f
+        _sharpness.floatValue = 0f
+        _blur.floatValue = 0f
+        _vignette.floatValue = 0f
         _selectedPreset.value = "None"
         _lutStrength.floatValue = 1f
         fantasyRenderer?.setImage(buffer.array(), ensured.width, ensured.height)
@@ -239,9 +266,18 @@ class EditorViewModel : ViewModel() {
             if (_selectedPreset.value != "None") {
                 appendLine("lut_strength:${_lutStrength.floatValue}")
             }
-            appendLine("brightness:${_brightness.floatValue}")
-            appendLine("contrast:${_contrast.floatValue}")
-            appendLine("saturation:${_saturation.floatValue}")
+            val b = _brightness.floatValue
+            val c = _contrast.floatValue
+            val s = _saturation.floatValue
+            val sh = _sharpness.floatValue
+            val bl = _blur.floatValue
+            val v = _vignette.floatValue
+            if (b != 0f) appendLine("brightness:$b")
+            if (c != 0f) appendLine("contrast:$c")
+            if (s != 0f) appendLine("saturation:$s")
+            if (sh != 0f) appendLine("sharpness:$sh")
+            if (bl != 0f) appendLine("blur:$bl")
+            if (v != 0f) appendLine("vignette:$v")
         }
         fantasyRenderer?.setFilterConfig(config)
     }

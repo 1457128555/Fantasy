@@ -40,7 +40,7 @@ GLES 3.0 实现
 
 - **拓扑结构**：纯链式 A → B → C，不支持 DAG
 - **参数系统**：统一 key-value 参数表（FilterParam），支持 float / int / vec 等类型
-- **初期滤镜**：亮度（Brightness）、对比度（Contrast）、饱和度（Saturation）
+- **滤镜**：亮度（Brightness）、对比度（Contrast）、饱和度（Saturation）、LUT、锐化（Sharpen）、模糊（Blur）、暗角（Vignette）
 
 ### JNI 桥接层
 
@@ -62,13 +62,18 @@ Fantasy/
 │       │   ├── MainActivity.kt            # 主界面，PickVisualMedia + EditorScreen
 │       │   ├── bridge/
 │       │   │   └── NativeBridge.kt        # JNI 接口声明
+│       │   ├── renderer/
+│       │   │   ├── FantasyRenderer.kt     # GLSurfaceView.Renderer，驱动 GL 渲染
+│       │   │   └── LUTPresets.kt          # LUT 预设数据生成（暖色/冷色/复古）
 │       │   ├── viewmodel/
-│       │   │   └── EditorViewModel.kt     # 图片加载、滤镜参数、debounce 渲染
+│       │   │   └── EditorViewModel.kt     # 图片加载、滤镜参数、驱动 GL 渲染
 │       │   └── ui/
 │       │       ├── EditorScreen.kt        # 编辑器主界面 Composable
 │       │       └── components/
 │       │           ├── TopToolBar.kt      # 内置图片/相册选图按钮
-│       │           ├── ImagePreview.kt    # 图片预览 + loading 指示器
+│       │           ├── GLPreview.kt       # GLSurfaceView Compose 封装
+│       │           ├── ImagePreview.kt    # 图片预览（已被 GLPreview 替代）
+│       │           ├── PresetPanel.kt     # LUT 预设横滑面板 + 强度滑条
 │       │           └── FilterPanel.kt     # 滤镜参数滑条
 │       ├── res/
 │       │   └── drawable/
@@ -107,19 +112,30 @@ Fantasy/
 │   │   │   └── filters/
 │   │   │       ├── BrightnessFilter.h
 │   │   │       ├── ContrastFilter.h
-│   │   │       └── SaturationFilter.h
+│   │   │       ├── SaturationFilter.h
+│   │   │       ├── LUTFilter.h          # 3D LUT 滤镜（2D atlas 查找）
+│   │   │       ├── SharpenFilter.h      # 锐化（Unsharp Mask）
+│   │   │       ├── BlurFilter.h         # 模糊（3×3 Gaussian）
+│   │   │       └── VignetteFilter.h     # 暗角
 │   │   └── src/
 │   │       ├── Filter.cpp
 │   │       ├── FilterChain.cpp
 │   │       └── filters/
 │   │           ├── BrightnessFilter.cpp
 │   │           ├── ContrastFilter.cpp
-│   │           └── SaturationFilter.cpp
+│   │           ├── SaturationFilter.cpp
+│   │           ├── LUTFilter.cpp
+│   │           ├── SharpenFilter.cpp
+│   │           ├── BlurFilter.cpp
+│   │           └── VignetteFilter.cpp
 │   │
 │   └── bridge/                       # JNI 桥接层
 │       ├── CMakeLists.txt
+│       ├── include/bridge/
+│       │   └── RenderSession.h          # 持久化 GL 渲染状态管理
 │       └── src/
-│           └── NativeBridge.cpp
+│           ├── NativeBridge.cpp
+│           └── RenderSession.cpp        # RenderSession 实现
 │
 └── build.gradle / settings.gradle
 ```
@@ -176,3 +192,6 @@ Fantasy/
 - [x] Phase 3 — JNI 桥接 + 预览（已完成：nativeApplyFilters JNI 接口, EditorViewModel, 编辑器 UI, 内置图片 + 相册选图, 亮度滤镜预览）
 - [x] Phase 4 — 补全基础滤镜（已完成：ContrastFilter, SaturationFilter, UI 滑条全部启用, 多滤镜链式叠加实时调参）
 - [x] Phase 5 — 离屏导出（已完成：exportImage 全分辨率离屏渲染, MediaStore 保存到相册, Toast 反馈）
+- [x] Phase 6 — GLSurfaceView 实时渲染（已完成：持久 EGL 上下文 + GPU 直出屏幕, RenderSession 管理渲染状态, 导出复用 GL 线程）
+- [x] Phase 7 — LUT 滤镜（已完成：3D LUT 2D atlas 查找, 暖色/冷色/复古预设, 强度可调, 与基础滤镜链式叠加）
+- [x] Phase 8 — 扩展滤镜（已完成：SharpenFilter 锐化, BlurFilter 模糊, VignetteFilter 暗角, UI 滑条, drawFrame Y翻转修正）

@@ -5,6 +5,9 @@ add_library(filter STATIC
     src/filters/ContrastFilter.cpp
     src/filters/SaturationFilter.cpp
     src/filters/LUTFilter.cpp
+    src/filters/SharpenFilter.cpp
+    src/filters/BlurFilter.cpp
+    src/filters/VignetteFilter.cpp
 )
 
 target_include_directories(filter PUBLIC include)
