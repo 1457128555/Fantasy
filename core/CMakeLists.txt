@@ -15,10 +15,13 @@ project(fantasy_core LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-add_library(fantasy_core STATIC
-        src/placeholder.cpp
-)
+# 自动收集 src/ 下所有 .cpp（含子目录）。CONFIGURE_DEPENDS 让增删文件时
+# CMake 自动重新收集，不用每次手动改这里。
+file(GLOB_RECURSE FANTASY_CORE_SOURCES CONFIGURE_DEPENDS
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
+
+add_library(fantasy_core STATIC ${FANTASY_CORE_SOURCES})
 
 # include/ 设为 PUBLIC：链接 fantasy_core 的目标（engine 胶水、iOS 胶水）
-# 自动获得 <fantasy/...> 头文件搜索路径。
+# 自动获得 <Common/...> <Render/...> 等头文件搜索路径。
 target_include_directories(fantasy_core PUBLIC include)

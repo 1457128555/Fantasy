@@ -23,11 +23,13 @@ Android/Java 能力一般，正在学 Vulkan。时间投入不稳定，里程碑
 - **第一阶段只做图片编辑**：滤镜 + 调色、裁剪/旋转/翻转。视频编辑是第二阶段。
 - **渲染后端用 GLES3 起步**，预留轻量 RHI 抽象层，将来可加 Vulkan 后端。
   本项目不承担 Vulkan 练习场角色（一次只开一条学习主线）。
-- **跨平台（架构原则，本期不实现 iOS）**：C++ 核心设计为平台无关的独立库
+- **跨平台（iOS 与 Android 紧跟同步）**：C++ 核心设计为平台无关的独立库
   `core/`，不依赖任何平台头（jni/android/EGL/OpenGLES）；平台服务（日志、
   GL context、文件 IO）通过接口由各平台胶水注入。Android 用 `engine`
-  module 做胶水，将来 iOS 用 `platform/ios` 复用同一份 core。本期只建立这条
-  接缝和纪律（成本≈0，因 core 从零起步），**不写 iOS 胶水**（YAGNI）。
+  module 做胶水，iOS 用 `platform/ios`（Obj-C++ + EAGL）复用同一份 core。
+  **工作流（2026-06-13 定）：每个里程碑 Android 真机验证后立即同步 iOS**，
+  Claude 写 iOS 并用模拟器（xcodebuild + simctl）编译/运行/截图验证，用户不碰
+  Xcode（前提：需装完整 Xcode）。平台胶水大头集中在 M2，M3+ 同步较轻。
   注：iOS 上 GLES 已 deprecated，正经做需在同一 RHI 接口后加 Metal 后端——
   这正是 RHI 抽象的第二个用途（除了 Vulkan）。
 - **ML 第二阶段再引入**（端侧推理：人像分割/抠图等），第一阶段不碰。
@@ -148,6 +150,9 @@ Kotlin 侧三层：
   命令：`createSession(path)`、`setParam(key, value)`、`setCrop(rect)`、
   `export(path)`、`attachSurface(surface)` 等。C++ 指针以 `Long` handle 持有，
   生命周期与 `close()` 显式绑定。
+  （实现：`Engine` 采用 Ogre 风格单例 `Common::Singleton<Engine>`——胶水
+  `new Engine()` 得到的指针即 handle，core 内部用 `Engine::Instance()` 全局访问，
+  两者共存不矛盾。）
 - **`EditorViewModel`**（app module）：编辑界面状态机。持有 UI 状态
   （选中工具、参数值、撤销栈），把用户操作翻译成 EngineBridge 调用。
   协程与 `StateFlow` 在此学习。

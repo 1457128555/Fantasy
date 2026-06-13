@@ -134,6 +134,13 @@ object EngineBridge {
 
 ## 里程碑 2：GL 三角形
 
+> **进度（2026-06-13）：** core 骨架已写并编译通过（`Common::Singleton`/`Macros`/
+> `Logger`/`Engine`/`Render::System`/`Render::Context`，host + Android arm64 全过）。
+> 实际目录是 `core/include/{Common,Render}/ + Engine.h`、`core/src/` 镜像（非下方
+> "最终文件结构"里的 runtime/platform 布局——那是早期设想，以实际为准）。
+> **均为空壳**，M2 真正内容（IGLContext 接口、CommandQueue、RenderThread、EGL 胶水、
+> 三角形、生命周期）未写。下一步：先写 `IGLContext` 接口。
+
 **先学：**
 - `SurfaceView` / `Surface` / `ANativeWindow` 三者关系（Surface 是跨进程的图形缓冲队列句柄，C++ 侧用 `ANativeWindow_fromSurface` 拿到原生窗口）
 - EGL 在 Android 上的形态（你在 InShot 用过，重点是这次**自己从零搭**：eglGetDisplay → ChooseConfig → CreateContext → CreateWindowSurface → MakeCurrent）
