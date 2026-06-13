@@ -25,7 +25,7 @@ Android/Java 能力一般，正在学 Vulkan。时间投入不稳定，里程碑
   本项目不承担 Vulkan 练习场角色（一次只开一条学习主线）。
 - **跨平台（架构原则，本期不实现 iOS）**：C++ 核心设计为平台无关的独立库
   `core/`，不依赖任何平台头（jni/android/EGL/OpenGLES）；平台服务（日志、
-  GL context、文件 IO）通过接口由各平台胶水注入。Android 用 `RenderEngine`
+  GL context、文件 IO）通过接口由各平台胶水注入。Android 用 `engine`
   module 做胶水，将来 iOS 用 `platform/ios` 复用同一份 core。本期只建立这条
   接缝和纪律（成本≈0，因 core 从零起步），**不写 iOS 胶水**（YAGNI）。
   注：iOS 上 GLES 已 deprecated，正经做需在同一 RHI 接口后加 Metal 后端——
@@ -53,7 +53,7 @@ Android/Java 能力一般，正在学 Vulkan。时间投入不稳定，里程碑
 │  Android app (Kotlin)    │   │  iOS app (Swift) 【未来】 │
 │  Compose · ViewModel      │   │  SwiftUI                  │
 ├──────────────────────────┤   ├──────────────────────────┤
-│  平台胶水：RenderEngine    │   │  平台胶水：platform/ios   │
+│  平台胶水：engine    │   │  平台胶水：platform/ios   │
 │  JNI 绑定 + EGL context   │   │  Obj-C++ + EAGL/Metal     │
 │  实现 IGLContext 注入 core │   │  实现 IGLContext 注入 core │
 └─────────────┬────────────┘   └────────────┬─────────────┘
@@ -82,7 +82,7 @@ Android/Java 能力一般，正在学 Vulkan。时间投入不稳定，里程碑
   *context/surface 创建*（EGL vs EAGL）是平台胶水的活。
 - **JNI 边界刻意做薄**：Kotlin 侧只发"命令 + 参数"，不在边界传像素数据。
   图片像素在 C++ 侧加载和持有，避免 JNI 数组拷贝，边界易维护。JNI 绑定本身
-  是 Android 胶水（住 RenderEngine module），可以用 `__android_log_print` 等
+  是 Android 胶水（住 engine module），可以用 `__android_log_print` 等
   平台 API——铁律只约束 core。
 - **RHI 抽象保持轻量**：只抽象实际用到的概念（纹理、shader/管线、
   framebuffer、draw）。GLES3 是当前唯一实现；抽象的目的是分离"渲染概念"
@@ -129,27 +129,27 @@ Fantasy/
 ├── core/          # 纯 C++ 库（plain CMake）：引擎逻辑，零平台依赖
 │   ├── include/fantasy/   # 公开头文件（含 IGLContext 等注入接口）
 │   └── src/               # EditSession / Effect / Renderer / rhi/gles ...
-├── RenderEngine/  # Android Library module：Android 胶水
+├── engine/  # Android Library module：Android 胶水
 │   └── src/main/cpp/      # jni_bridge.cpp + EGL 实现 IGLContext；
 │                          #   CMake add_subdirectory(core) 链 fantasy_core
 ├── platform/ios/  # 【未来】iOS 胶水：Obj-C++ + EAGL/Metal，复用同一 core
 └── app/           # Kotlin：UI、ViewModel、平台能力
 ```
 
-分层意图：core 不属于任何平台（iOS 也能直接复用）；RenderEngine 是薄胶水，
+分层意图：core 不属于任何平台（iOS 也能直接复用）；engine 是薄胶水，
 app 无法绕过绑定类碰 native；换 UI / 加平台时 core 原样保留。
-（命名：实际 module 名 `RenderEngine`，包名 `com.fan.renderengine`，
-native 库 `librenderengine.so`。）
+（命名：实际 module 名 `engine`，包名 `com.fan.engine`，
+native 库 `libengine.so`。）
 
 Kotlin 侧三层：
 
-- **`RenderEngineBridge`**（RenderEngine module）：唯一 JNI 绑定类。
-  `external fun` 声明 + `System.loadLibrary("renderengine")`；方法对应 C++
+- **`EngineBridge`**（engine module）：唯一 JNI 绑定类。
+  `external fun` 声明 + `System.loadLibrary("engine")`；方法对应 C++
   命令：`createSession(path)`、`setParam(key, value)`、`setCrop(rect)`、
   `export(path)`、`attachSurface(surface)` 等。C++ 指针以 `Long` handle 持有，
   生命周期与 `close()` 显式绑定。
 - **`EditorViewModel`**（app module）：编辑界面状态机。持有 UI 状态
-  （选中工具、参数值、撤销栈），把用户操作翻译成 RenderEngineBridge 调用。
+  （选中工具、参数值、撤销栈），把用户操作翻译成 EngineBridge 调用。
   协程与 `StateFlow` 在此学习。
 - **Compose UI**：编辑主屏 = 预览区（`AndroidView` 包 `SurfaceView`）
   + 底部工具栏（滤镜/调节/裁剪三 tab）+ 参数滑杆区。图片选择入口用

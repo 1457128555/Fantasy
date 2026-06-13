@@ -6,7 +6,7 @@
 #   ✓ 平台服务（日志、GL context/surface、文件 IO）通过 include/fantasy/ 下的
 #     接口（如 IGLContext）由各平台胶水注入
 #
-# 这样 Android（RenderEngine）和将来 iOS（platform/ios）能复用同一份 core。
+# 这样 Android（engine）和将来 iOS（platform/ios）能复用同一份 core。
 # GL ES 的 draw 调用两端通用，可放这里；context 创建（EGL/EAGL）属平台胶水。
 
 cmake_minimum_required(VERSION 3.22.1)
@@ -19,6 +19,6 @@ add_library(fantasy_core STATIC
         src/placeholder.cpp
 )
 
-# include/ 设为 PUBLIC：链接 fantasy_core 的目标（RenderEngine 胶水、iOS 胶水）
+# include/ 设为 PUBLIC：链接 fantasy_core 的目标（engine 胶水、iOS 胶水）
 # 自动获得 <fantasy/...> 头文件搜索路径。
 target_include_directories(fantasy_core PUBLIC include)

@@ -3,7 +3,7 @@ plugins {
 }
 
 android {
-    namespace = "com.fan.renderengine"
+    namespace = "com.fan.engine"
     compileSdk {
         version = release(36) {
             minorApiLevel = 1

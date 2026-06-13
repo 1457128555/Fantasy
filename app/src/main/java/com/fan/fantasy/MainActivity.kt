@@ -12,7 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.fan.fantasy.ui.theme.FantasyTheme
-import com.fan.renderengine.RenderEngineBridge
+import com.fan.engine.EngineBridge
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -22,7 +22,7 @@ class MainActivity : ComponentActivity() {
             FantasyTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     Greeting(
-                        name = RenderEngineBridge.nativeHello(),
+                        name = EngineBridge.nativeHello(),
                         modifier = Modifier.padding(innerPadding)
                     )
                 }

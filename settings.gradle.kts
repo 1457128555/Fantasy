@@ -24,4 +24,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "Fantasy"
 include(":app")
-include(":RenderEngine")
+include(":engine")
