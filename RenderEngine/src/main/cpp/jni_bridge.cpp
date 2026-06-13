@@ -19,3 +19,10 @@
 //   - 返回 env->NewStringUTF("...") 构造一个交给 VM 托管的 jstring
 //   - 顺手用 __android_log_print(ANDROID_LOG_INFO, "RenderEngine", "...") 打日志
 // ============================================================================
+
+extern "C"
+JNIEXPORT jstring JNICALL
+Java_com_fan_renderengine_RenderEngineBridge_nativeHello(JNIEnv *env, jobject thiz) {
+    __android_log_print(ANDROID_LOG_INFO, "RenderEngine", "nativeHello called");
+    return env->NewStringUTF("test");
+}
