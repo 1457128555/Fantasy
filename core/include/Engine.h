@@ -10,11 +10,11 @@ namespace Fantasy
         
         ~Engine();
         
-        bool initialize();
+        [[nodiscard]] bool initialize();
         
         void deinit();
 
     private:
-    
+
     };
 } // namespace Fantasy

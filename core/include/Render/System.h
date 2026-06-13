@@ -11,7 +11,7 @@ namespace Fantasy::Render
         
         ~System();
 
-        bool initialize();
+        [[nodiscard]] bool initialize();
         
         void deinit();
     

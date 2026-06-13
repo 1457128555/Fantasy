@@ -11,4 +11,14 @@ namespace Fantasy::Render
     {
 
     }
+
+    void Context::attach(IGLContext* context) 
+    {
+        mGLContext = context; 
+    }
+
+    void Context::detach() 
+    { 
+        mGLContext = nullptr;
+    }
 }

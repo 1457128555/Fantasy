@@ -10,7 +10,7 @@ namespace Fantasy::Common
 
         ~Logger();
 
-        bool initialize();
+        [[nodiscard]] bool initialize();
 
         void deinit();
     };

@@ -22,6 +22,6 @@ namespace Fantasy::Render
 
     void System::deinit()
     {
-        mContext.release();
+        mContext.reset();
     }
 }

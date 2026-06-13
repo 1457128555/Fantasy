@@ -12,14 +12,14 @@ namespace Fantasy
 
     bool Engine::initialize()
     {
-        return Common::Logger::Instance()->initialize();
-        return Render::System::Instance()->initialize();
+        return Common::Logger::Instance()->initialize()
+            && Render::System::Instance()->initialize();
     }
 
     void Engine::deinit()
     {
-        return Render::System::Instance()->deinit();
-        return Common::Logger::Instance()->deinit();
+        Render::System::Instance()->deinit();
+        Common::Logger::Instance()->deinit();
     }
 
     Engine::~Engine()

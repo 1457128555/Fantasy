@@ -9,7 +9,7 @@ namespace Fantasy::Common
     {
         friend T; 
     public:
-        static T* Instance() 
+        [[nodiscard]] static T* Instance() 
         {
             assert(nullptr != sInstance);
             return sInstance;
