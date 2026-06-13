@@ -20,15 +20,22 @@ add_subdirectory(
 # 这三处必须一致。SHARED = 动态库（.so），打进 APK 的 lib/arm64-v8a/。
 add_library(engine SHARED
         jni_bridge.cpp
+        EglContext.cpp
 )
 
 # liblog 是 NDK sysroot 自带的系统库，__android_log_print 用它。
 # 声明链接即可，运行时由系统提供。
 find_library(log-lib log)
+find_library(android-lib android)    
+find_library(egl-lib  EGL)
+find_library(gles-lib GLESv3)
 
 # 链接：系统 log 库 + 平台无关的 fantasy_core（静态库，被吸收进 .so）。
 # 链了 fantasy_core 后，jni_bridge.cpp 里可以 #include <fantasy/...>。
 target_link_libraries(engine
         ${log-lib}
+        ${android-lib}     
+        ${egl-lib}             
+        ${gles-lib}             
         fantasy_core
 )
