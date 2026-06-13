@@ -33,32 +33,41 @@ Fantasy/
 │       │   ├── PreviewSurface.kt       # AndroidView 包 SurfaceView
 │       │   └── CropOverlay.kt          # 裁剪框手势交互（M8）
 │       └── export/Exporter.kt          # Bitmap + MediaStore 写入
-├── engine/                             # Android Library module
-│   ├── src/main/java/com/fan/fantasy/engine/
-│   │   └── EngineBridge.kt             # 唯一 JNI 绑定类
+├── core/                               # 纯 C++ 库（plain CMake，零平台依赖）
+│   ├── CMakeLists.txt                  # 产出静态库 fantasy_core
+│   ├── include/fantasy/                # 公开头文件
+│   │   ├── gl_context.h                # IGLContext 注入接口（EGL/EAGL 各自实现）
+│   │   ├── logger.h                    # ILogger 注入接口
+│   │   ├── edit_session.h             # 编辑状态（不碰 GL）
+│   │   ├── effect.h                    # Effect 接口 + 参数声明
+│   │   └── rhi/rhi.h                   # Texture/Shader/RenderTarget 抽象
+│   ├── src/
+│   │   ├── command_queue.h             # 线程安全命令队列
+│   │   ├── render_thread.cpp           # 渲染线程（makeCurrent 注入的 context）
+│   │   ├── edit_session.cpp            # 编辑状态
+│   │   ├── effects/                    # BrightnessEffect、LutEffect 等
+│   │   ├── rhi/gles/                   # GLES3 后端（draw 调用，两端通用）
+│   │   ├── renderer.cpp                # EditSession → draw 序列
+│   │   └── third_party/stb/            # stb_image, stb_image_write
+│   └── test/                           # GoogleTest（跑在 Mac，M6 起）
+├── RenderEngine/                       # Android Library module（Android 胶水）
+│   ├── src/main/java/com/fan/renderengine/
+│   │   └── RenderEngineBridge.kt       # 唯一 JNI 绑定类
 │   └── src/main/cpp/
-│       ├── CMakeLists.txt
+│       ├── CMakeLists.txt              # add_subdirectory(core) 链 fantasy_core
 │       ├── jni_bridge.cpp              # JNI 入口，只做转发
-│       ├── engine.h / engine.cpp       # Engine：组合下面所有部件
-│       ├── core/
-│       │   ├── command_queue.h         # 线程安全命令队列
-│       │   ├── render_thread.h/.cpp    # 渲染线程（持有 EGL）
-│       │   ├── edit_session.h/.cpp     # 编辑状态（不碰 GL）
-│       │   ├── effect.h                # Effect 接口 + 参数声明
-│       │   └── effects/                # BrightnessEffect、LutEffect 等
-│       ├── rhi/
-│       │   ├── rhi.h                   # Texture/Shader/RenderTarget 抽象
-│       │   └── gles/                   # GLES3 实现 + EGL 封装
-│       ├── render/renderer.h/.cpp      # EditSession → draw 序列
-│       └── third_party/stb/            # stb_image, stb_image_write
-├── engine/src/test/cpp/                # GoogleTest（跑在 Mac，M6 起）
+│       └── egl_context.cpp            # 用 EGL 实现 core 的 IGLContext（M2）
+├── platform/ios/                       # 【未来】iOS 胶水，复用同一 core
 └── docs/superpowers/{specs,plans}/
 ```
 
-**EngineBridge 完整 API（各里程碑逐步填充，命名以此为准）：**
+铁律：`core/` 下任何文件都不许 `#include` 平台头（jni/android/EGL/OpenGLES）；
+平台专属实现（EGL context、JNI 转发、日志）住 `RenderEngine/src/main/cpp/`。
+
+**RenderEngineBridge 完整 API（各里程碑逐步填充，命名以此为准）：**
 
 ```kotlin
-object EngineBridge {
+object RenderEngineBridge {
     external fun nativeHello(): String                    // M1，M2 后删除
     external fun initialize()                             // M2
     external fun release()                                // M2
@@ -109,15 +118,17 @@ object EngineBridge {
 - Kotlin 第二课：`object`（单例）、companion object、`init` 块
 
 **步骤：**
-- [ ] 新建 module：File → New Module → Android Library，名为 `engine`，包 `com.fan.fantasy.engine`
-- [ ] 🔧 配置 `engine/build.gradle.kts` 的 externalNativeBuild + `engine/src/main/cpp/CMakeLists.txt`（目标名 `fantasy_engine`，C++20，链接 `log`）
-- [ ] 写 `jni_bridge.cpp`：实现 `nativeHello`，返回一个 C++ 侧构造的字符串（顺手用 `__android_log_print` 打一条日志，学会看 Logcat）
-- [ ] 写 `EngineBridge.kt`：`object` + `init { System.loadLibrary("fantasy_engine") }` + `external fun nativeHello(): String`
-- [ ] app module 依赖 engine module，主屏显示 `EngineBridge.nativeHello()` 的返回值
+- [x] 新建 module：Android Library，名为 `RenderEngine`，包 `com.fan.renderengine`
+- [x] 🔧 配置 `RenderEngine/build.gradle.kts`（externalNativeBuild + abiFilters）+ `RenderEngine/src/main/cpp/CMakeLists.txt`（库名 `renderengine`，C++20，链 `log` + `fantasy_core`）+ 顶层 `core/` 骨架（Claude 写）
+- [ ] **第一步小验证**：Sync + Build，确认 `librenderengine.so`（含空 `fantasy_core`）编出来 → 跨平台构建链路通
+- [ ] 写 `jni_bridge.cpp`：实现 `nativeHello`，返回 C++ 构造的字符串（顺手 `__android_log_print` 打日志，学会看 Logcat）
+- [ ] 写 `RenderEngineBridge.kt`：`object` + `init { System.loadLibrary("renderengine") }` + `external fun nativeHello(): String`
+- [ ] app module 依赖 RenderEngine（`implementation(project(":RenderEngine"))`），主屏显示 `RenderEngineBridge.nativeHello()` 的返回值
 - [ ] 真机验证 + `git commit -m "feat: M1 JNI 打通"`
 
 **验收：** 屏幕显示来自 C++ 的字符串；Logcat 能看到 C++ 打的日志。
 **Review 点：** JNI 命名、字符串转换的内存归属（谁分配谁释放）。
+**注：** `nativeHello` 这次自洽地写在 JNI 胶水里即可（不绕 core）；core 的第一段真实代码从 M2 开始。
 
 ---
 
@@ -129,13 +140,18 @@ object EngineBridge {
 - Surface 生命周期回调：`surfaceCreated` / `surfaceChanged` / `surfaceDestroyed`，和渲染线程的协调（destroyed 时必须同步等渲染线程释放 EGLSurface）
 - Kotlin 第三课：lambda 与尾随 lambda（Compose 到处都是）、`Unit`、接口实现
 
+**核心/胶水划线（本里程碑第一次实践跨平台分层）：**
+- **core**：`CommandQueue`、`RenderThread`、`IGLContext` 接口、渲染逻辑——零平台头
+- **RenderEngine 胶水**：用 EGL 实现 `IGLContext`（`egl_context.cpp`）、`jni_bridge.cpp` 转发
+
 **步骤：**
-- [ ] C++：写 `CommandQueue`（`std::mutex` + `std::condition_variable` + `std::deque<std::function<void()>>`，你写过类似的，注意退出语义）
-- [ ] C++：写 `RenderThread`：`std::thread` 跑 loop，从队列取命令执行；提供 `post(fn)` 和 `quitAndJoin()`
-- [ ] C++：写 EGL 封装（`rhi/gles/` 下）：attach surface 时建 context/surface，detach 时释放
-- [ ] C++：`Engine` 类组合上面三者；`jni_bridge.cpp` 实现 `initialize/release/attachSurface/detachSurface`，全部只做"转发到命令队列"
-- [ ] C++：attach 后渲染一帧：clear 成深灰 + 画一个带顶点色的三角形（shader 内联硬编码即可，M3 会重构进 RHI）
-- [ ] Kotlin：写 `PreviewSurface.kt`：`AndroidView` 包 `SurfaceView`，`SurfaceHolder.Callback` 三个回调分别调 EngineBridge 的 attach/detach
+- [ ] core：定义 `IGLContext` 接口（`makeCurrent()` / `swapBuffers()` / `destroy()`），放 `core/include/fantasy/gl_context.h`
+- [ ] core：写 `CommandQueue`（`std::mutex` + `std::condition_variable` + `std::deque<std::function<void()>>`，注意退出语义）
+- [ ] core：写 `RenderThread`：`std::thread` 跑 loop，启动时 `ctx->makeCurrent()`，从队列取命令执行；提供 `post(fn)` 和 `quitAndJoin()`
+- [ ] RenderEngine 胶水：用 EGL 实现 `IGLContext`（`ANativeWindow_fromSurface` 拿窗口 → eglCreateWindowSurface/Context）
+- [ ] RenderEngine 胶水：`jni_bridge.cpp` 实现 `initialize/release/attachSurface/detachSurface`，构造 EGL context 注入 core，全部转发到命令队列
+- [ ] core：attach 后渲染一帧：clear 成深灰 + 画一个带顶点色的三角形（shader 内联硬编码即可，M3 重构进 RHI）
+- [ ] Kotlin：写 `PreviewSurface.kt`：`AndroidView` 包 `SurfaceView`，`SurfaceHolder.Callback` 三回调调 `RenderEngineBridge` 的 attach/detach
 - [ ] 处理 Activity 生命周期：`onDestroy` 时 `release()`；旋转屏幕/退后台再回来不崩、不黑屏
 - [ ] 真机验证 + `git commit -m "feat: M2 渲染线程画出三角形"`
 
@@ -156,7 +172,7 @@ object EngineBridge {
 - [ ] C++：用 `dup(fd)` + `fdopen` + `stbi_load_from_file` 解码 RGBA8（注意 fd 归属：Kotlin 侧 `use` 会关原 fd，所以 C++ 要 dup）
 - [ ] C++：搭 RHI 初版：`rhi.h` 定义 `Texture`、`Shader`、`RenderTarget` 接口 + `Device` 工厂；GLES 实现；把 M2 的三角形代码重构进来
 - [ ] C++：`Renderer`：上传图片纹理，按图片宽高比 letterbox 画全屏 quad
-- [ ] Kotlin：`PickerScreen` 一个按钮唤起 Photo Picker，选中后导航到 `EditorScreen`，fd 传给 `EngineBridge.openImage`
+- [ ] Kotlin：`PickerScreen` 一个按钮唤起 Photo Picker，选中后导航到 `EditorScreen`，fd 传给 `RenderEngineBridge.openImage`
 - [ ] 真机验证 + `git commit -m "feat: M3 选图并显示"`
 
 **验收：** 选任意相册图片，正确显示、比例不变形；横竖图都对；选超大图（≥50MP）不崩（解码时按需降采样，上限边长 4096）。
@@ -176,7 +192,7 @@ object EngineBridge {
 - [ ] C++：定义 `Effect` 接口（`name()`、`parameters()` 返回参数描述、`apply(device, src, dst)`）和 `EffectChain`；`EditSession` 持有链 + 参数值表
 - [ ] C++：实现 `BrightnessEffect`；`setParam` 命令更新 EditSession 后请求重绘
 - [ ] C++：命令队列加"丢帧合并"：渲染请求 pending 时不重复入队，参数永远取最新（latest-wins）
-- [ ] Kotlin：`EditorViewModel`：`data class EditorUiState(val brightness: Float = 0f, ...)` + `StateFlow`；`onBrightnessChange` 同时更新 state 和调 `EngineBridge.setParam("brightness", v)`
+- [ ] Kotlin：`EditorViewModel`：`data class EditorUiState(val brightness: Float = 0f, ...)` + `StateFlow`；`onBrightnessChange` 同时更新 state 和调 `RenderEngineBridge.setParam("brightness", v)`
 - [ ] Kotlin：`EditorScreen` 加 `Slider`，绑定 ViewModel
 - [ ] 真机验证 + `git commit -m "feat: M4 亮度调节"`
 
