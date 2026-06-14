@@ -1,0 +1,7 @@
+{
+  // 关掉微软 C/C++ 扩展(cpptools)的 IntelliSense，避免和 clangd 两套引擎打架。
+  // 报错码 C/C++(1696)"找不到 OpenGLES/ES3/gl.h" 就是它在 Mac host 上误解析 GL.h 导致的。
+  // clangd 已通过项目根 .clangd 读 gradle 生成的 compile_commands.json，解析更准（知道 __ANDROID__、NDK 头、core/include）。
+  // 注意：这只关 cpptools 的"代码分析/红波浪线"，它的 native 调试功能照常可用。
+  "C_Cpp.intelliSenseEngine": "disabled"
+}
