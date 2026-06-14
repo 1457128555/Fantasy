@@ -12,12 +12,16 @@ namespace Fantasy::Android
     class EglContext : public Render::IGLContext
     {
     public:
-        explicit EglContext(ANativeWindow* window); 
-        ~EglContext() override; 
+        EglContext();
+        ~EglContext() override;
 
-        bool initialize();
+        bool initialize();                          // display + config + context（app 级，一次）
 
-        [[nodiscard]] 
+        bool createSurface(ANativeWindow* window);  // 建 EGLSurface（每个新 window）
+        void destroySurface();                      // 毁 EGLSurface（surface 没了，留住 context）
+        bool hasSurface() const { return mSurface != EGL_NO_SURFACE; }
+
+        [[nodiscard]]
         bool makeCurrent() override;
         void swapBuffers() override;
         int width()  const override;
@@ -26,8 +30,7 @@ namespace Fantasy::Android
         FANTASY_NON_COPYABLE(EglContext);  
 
     private:
-        ANativeWindow* mWindow  = nullptr;           
-        EGLDisplay     mDisplay = EGL_NO_DISPLAY;     
+        EGLDisplay     mDisplay = EGL_NO_DISPLAY;
         EGLSurface     mSurface = EGL_NO_SURFACE;
         EGLContext     mContext = EGL_NO_CONTEXT;    
         EGLConfig      mConfig  = nullptr;

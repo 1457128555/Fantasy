@@ -5,8 +5,7 @@
 
 namespace Fantasy::Android
 {
-    EglContext::EglContext(ANativeWindow* window)
-        : mWindow(window)
+    EglContext::EglContext()
     {
 
     }
@@ -15,12 +14,11 @@ namespace Fantasy::Android
     {
         if (mDisplay != EGL_NO_DISPLAY)
         {
-            eglMakeCurrent(mDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+            destroySurface();   // 解绑 + 毁 surface（若还在）
             if (mContext != EGL_NO_CONTEXT) eglDestroyContext(mDisplay, mContext);
-            if (mSurface != EGL_NO_SURFACE) eglDestroySurface(mDisplay, mSurface);
         }
         mContext = EGL_NO_CONTEXT;
-        mSurface = EGL_NO_SURFACE; 
+        mSurface = EGL_NO_SURFACE;
         mDisplay = EGL_NO_DISPLAY;
     }
 
@@ -54,17 +52,6 @@ namespace Fantasy::Android
             return false;
         }
 
-        EGLint visualId = 0;
-        eglGetConfigAttrib(mDisplay, mConfig, EGL_NATIVE_VISUAL_ID, &visualId);
-        ANativeWindow_setBuffersGeometry(mWindow, 0, 0, visualId);   
-
-        mSurface = eglCreateWindowSurface(mDisplay, mConfig, mWindow, nullptr);
-        if (mSurface == EGL_NO_SURFACE) 
-        { 
-            Common::Logger::Instance()->logE("EglContext", "createWindowSurface fail");
-            return false; 
-        }
-
         const EGLint ctxAttribs[] = { EGL_CONTEXT_CLIENT_VERSION, 3, EGL_NONE };
         mContext = eglCreateContext(mDisplay, mConfig, EGL_NO_CONTEXT, ctxAttribs);
         if (mContext == EGL_NO_CONTEXT)
@@ -76,7 +63,32 @@ namespace Fantasy::Android
         return true;
     }
 
-    bool EglContext::makeCurrent() 
+    bool EglContext::createSurface(ANativeWindow* window)
+    {
+        EGLint visualId = 0;
+        eglGetConfigAttrib(mDisplay, mConfig, EGL_NATIVE_VISUAL_ID, &visualId);
+        ANativeWindow_setBuffersGeometry(window, 0, 0, visualId);
+
+        mSurface = eglCreateWindowSurface(mDisplay, mConfig, window, nullptr);
+        if (mSurface == EGL_NO_SURFACE)
+        {
+            Common::Logger::Instance()->logE("EglContext", "createWindowSurface fail");
+            return false;
+        }
+        return true;
+    }
+
+    void EglContext::destroySurface()
+    {
+        if (mSurface != EGL_NO_SURFACE)
+        {
+            eglMakeCurrent(mDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);  // 先解绑
+            eglDestroySurface(mDisplay, mSurface);
+            mSurface = EGL_NO_SURFACE;
+        }
+    }
+
+    bool EglContext::makeCurrent()
     {
         return eglMakeCurrent(mDisplay, mSurface, mSurface, mContext) == EGL_TRUE;
     }

@@ -21,7 +21,8 @@ using Fantasy::Common::Logger;
 using Fantasy::Android::EglContext;
 
 static ANativeWindow* g_window = nullptr;
-static std::unique_ptr<EglContext> g_eglContext;  
+static std::unique_ptr<EglContext> g_eglContext;
+static bool g_glInited = false;   // GL 资源（program/texture/VBO）随 context 只建一次
 
 extern "C"
 JNIEXPORT jstring JNICALL
@@ -54,25 +55,34 @@ JNIEXPORT void JNICALL
 Java_com_fan_engine_EngineBridge_nativeSurfaceCreated(JNIEnv *env, jobject thiz, jobject surface) {
     g_window = ANativeWindow_fromSurface(env, surface);
 
-    System::Instance()->post([win = g_window]() {        
-        g_eglContext = std::make_unique<EglContext>(win);
-        if (!g_eglContext->initialize()) {                
-            Logger::Instance()->logE("engine", "EglContext init fail");
+    System::Instance()->post([win = g_window]() {
+        if (!g_eglContext) {                              // context 只建一次（app 级）
+            g_eglContext = std::make_unique<EglContext>();
+            if (!g_eglContext->initialize()) {
+                Logger::Instance()->logE("engine", "EglContext init fail");
+                return;
+            }
+            System::Instance()->getContext()->attach(g_eglContext.get());
+        }
+
+        if (!g_eglContext->createSurface(win)) {          // EGLSurface 每个新 window 建一次
+            Logger::Instance()->logE("engine", "createSurface fail");
             return;
         }
-        System::Instance()->getContext()->attach(g_eglContext.get());  
-
-        if (!g_eglContext->makeCurrent()) {               
+        if (!g_eglContext->makeCurrent()) {
             Logger::Instance()->logE("engine", "makeCurrent fail");
             return;
         }
 
-        if (!System::Instance()->initRenderer()) {       // 建 program+VBO（本 context 一次）
-            Logger::Instance()->logE("engine", "initRenderer fail");
-            return;
+        if (!g_glInited) {                                // GL 资源只建一次，surface 重建后复用（含已选纹理）
+            if (!System::Instance()->initRenderer()) {
+                Logger::Instance()->logE("engine", "initRenderer fail");
+                return;
+            }
+            g_glInited = true;
         }
+
         System::Instance()->renderFrame(g_eglContext->width(), g_eglContext->height());
-        
         g_eglContext->swapBuffers();
     });
 }
@@ -90,8 +100,7 @@ extern "C"
 JNIEXPORT void JNICALL
 Java_com_fan_engine_EngineBridge_nativeSurfaceDestroyed(JNIEnv *env, jobject thiz) {
     System::Instance()->postAndWait([]() {
-        System::Instance()->getContext()->detach();
-        g_eglContext.reset();   
+        g_eglContext->destroySurface();   // 只毁 EGLSurface，留住 context + GL 资源（已选纹理还在）
     });
 
     if (g_window) {
@@ -127,7 +136,7 @@ Java_com_fan_engine_EngineBridge_nativeSetImage(JNIEnv* env, jobject thiz, jobje
 
     System::Instance()->post([w, h, pixels]() {
         System::Instance()->setImage(w, h, pixels->data());
-        if (g_eglContext) {
+        if (g_eglContext && g_eglContext->hasSurface()) {   // 有 surface 才渲染（无 surface 时 context 未 current）
             System::Instance()->renderFrame(g_eglContext->width(), g_eglContext->height());
             g_eglContext->swapBuffers();
         }
