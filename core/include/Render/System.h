@@ -31,7 +31,9 @@ namespace Fantasy::Render
         [[nodiscard]] bool initRenderer(); 
         void renderFrame(int width, int height); 
 
-        void setImage(int width, int height, const uint8_t* pixels);  
+        void setImage(int width, int height, const uint8_t* pixels);
+
+        void releaseRenderer();   // 在渲染线程销毁 GL 资源（关闭时调，须 context 仍 current）
 
     private:
         std::unique_ptr<Context>        mContext;

@@ -22,7 +22,8 @@ using Fantasy::Android::EglContext;
 
 static ANativeWindow* g_window = nullptr;
 static std::unique_ptr<EglContext> g_eglContext;
-static bool g_glInited = false;   // GL 资源（program/texture/VBO）随 context 只建一次
+static bool g_glInited = false;       // GL 资源（program/texture/VBO）随 context 只建一次
+static bool g_engineInited = false;   // 引擎是否已初始化（幂等 init/destroy 用）
 
 extern "C"
 JNIEXPORT jstring JNICALL
@@ -33,21 +34,42 @@ Java_com_fan_engine_EngineBridge_nativeHello(JNIEnv *env, jobject thiz) {
 
 extern "C" JNIEXPORT void JNICALL
 Java_com_fan_engine_EngineBridge_nativeInit(JNIEnv* env, jobject thiz) {
-    new Engine();   
+    if (g_engineInited) return;   // 幂等：已初始化则跳过（进程复用、Activity 重建都安全）
+
+    new Engine();
 
     Logger::Instance()->setSink(
         [](Logger::Level lvl, const std::string& tag, const std::string& msg) {
             int prio = lvl == Logger::Error   ? ANDROID_LOG_ERROR
                      : lvl == Logger::Warning ? ANDROID_LOG_WARN
                                               : ANDROID_LOG_INFO;
-            __android_log_print(prio, tag.c_str(), "%s", msg.c_str());  
+            __android_log_print(prio, tag.c_str(), "%s", msg.c_str());
         }
     );
 
     if (!Engine::Instance()->initialize()) {
         Logger::Instance()->logE("engine", "Engine initialize failed");
+        delete Engine::Instance();   // 回滚，保持可重试（否则单例残留，下次 new 会 assert）
         return;
     }
+    g_engineInited = true;
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_com_fan_engine_EngineBridge_nativeDestroy(JNIEnv* env, jobject thiz) {
+    if (!g_engineInited) return;   // 未初始化 / 已销毁 → 幂等返回
+
+    System::Instance()->postAndWait([]() {   // ① 渲染线程上拆 GL/EGL（线程还活着）
+        System::Instance()->releaseRenderer();
+        System::Instance()->getContext()->detach();   // 解除 Context 对即将销毁的 eglContext 的引用
+        g_eglContext.reset();                          // 毁 surface(若有)+context → 释放全部 GL 资源
+    });
+    g_glInited = false;
+    if (g_window) { ANativeWindow_release(g_window); g_window = nullptr; }
+
+    Engine::Instance()->deinit();   // ② 停渲染线程 + 各 deinit（此时已无 GL 活）
+    delete Engine::Instance();      // ③ ~Engine 删 System/Logger，Singleton 复位 sInstance
+    g_engineInited = false;
 }
 
 extern "C"

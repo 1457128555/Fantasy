@@ -27,11 +27,19 @@ import com.fan.fantasy.ui.theme.FantasyTheme
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()        
+        EngineBridge.nativeInit()        // 幂等：每次 Activity 创建都确保引擎在（进程复用后重建也安全）
+        enableEdgeToEdge()
         setContent {
-            FantasyTheme {        
-                EditorScreen()    
+            FantasyTheme {
+                EditorScreen()
             }
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        if (isFinishing) {               // 仅真正退出才拆引擎；配置变更重建不拆
+            EngineBridge.nativeDestroy()
         }
     }
 }

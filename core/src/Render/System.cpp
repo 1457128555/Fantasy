@@ -75,4 +75,9 @@ namespace Fantasy::Render
     {
         mRenderer->setImage(width, height, pixels);
     }
+
+    void System::releaseRenderer()
+    {
+        mRenderer.reset();   // Renderer/Texture/ShaderProgram 析构里的 glDelete*（须在渲染线程 + context current）
+    }
 }

@@ -6,12 +6,13 @@ import android.graphics.Bitmap
 object EngineBridge {
     init {
         System.loadLibrary("engine")
-        nativeInit();
     }
 
     external fun nativeHello(): String
 
-    external fun nativeInit()   
+    external fun nativeInit()
+
+    external fun nativeDestroy()
 
     external fun nativeSurfaceCreated(surface: Surface)
 
