@@ -2,9 +2,12 @@
 #include <android/log.h>
 #include <android/native_window.h>
 #include <android/native_window_jni.h>
+#include <android/bitmap.h>   
 
 #include <GLES3/gl3.h> 
 #include <memory>
+#include <cstring>         
+#include <vector>
 
 #include "Engine.h"             
 #include "Render/System.h"
@@ -70,7 +73,6 @@ Java_com_fan_engine_EngineBridge_nativeSurfaceCreated(JNIEnv *env, jobject thiz,
         }
         System::Instance()->renderFrame(g_eglContext->width(), g_eglContext->height());
         
-        
         g_eglContext->swapBuffers();
     });
 }
@@ -96,4 +98,38 @@ Java_com_fan_engine_EngineBridge_nativeSurfaceDestroyed(JNIEnv *env, jobject thi
         ANativeWindow_release(g_window);  
         g_window = nullptr;
     }
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_fan_engine_EngineBridge_nativeSetImage(JNIEnv* env, jobject thiz, jobject bitmap) {
+    AndroidBitmapInfo info;
+    if (AndroidBitmap_getInfo(env, bitmap, &info) != ANDROID_BITMAP_RESULT_SUCCESS) {
+        __android_log_print(ANDROID_LOG_ERROR, "engine", "getInfo fail"); return;
+    }
+    if (info.format != ANDROID_BITMAP_FORMAT_RGBA_8888) {
+        __android_log_print(ANDROID_LOG_ERROR, "engine", "bitmap not RGBA8888"); return;
+    }
+
+    void* src = nullptr;
+    if (AndroidBitmap_lockPixels(env, bitmap, &src) != ANDROID_BITMAP_RESULT_SUCCESS) {  
+        __android_log_print(ANDROID_LOG_ERROR, "engine", "lockPixels fail"); return;
+    }
+
+    const int w = (int)info.width;
+    const int h = (int)info.height;
+    auto pixels = std::make_shared<std::vector<uint8_t>>((size_t)w * h * 4);
+    const uint8_t* s = (const uint8_t*)src;
+    for (int y = 0; y < h; ++y)
+        memcpy(pixels->data() + (size_t)y * w * 4, s + (size_t)y * info.stride, (size_t)w * 4);
+
+    AndroidBitmap_unlockPixels(env, bitmap);   
+
+    System::Instance()->post([w, h, pixels]() {
+        System::Instance()->setImage(w, h, pixels->data());
+        if (g_eglContext) {
+            System::Instance()->renderFrame(g_eglContext->width(), g_eglContext->height());
+            g_eglContext->swapBuffers();
+        }
+    });
 }

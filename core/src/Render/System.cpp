@@ -59,4 +59,9 @@ namespace Fantasy::Render
     {
         mRenderer->render(width, height);
     }
+
+    void System::setImage(int width, int height, const uint8_t* pixels)
+    {
+        mRenderer->setImage(width, height, pixels);
+    }
 }

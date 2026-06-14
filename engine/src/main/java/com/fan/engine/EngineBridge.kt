@@ -1,6 +1,7 @@
 package com.fan.engine
 
 import android.view.Surface
+import android.graphics.Bitmap 
 
 object EngineBridge {
     init {
@@ -17,4 +18,6 @@ object EngineBridge {
     external fun nativeSurfaceChanged(width: Int, height: Int)
 
     external fun nativeSurfaceDestroyed()
+
+    external fun nativeSetImage(bitmap: Bitmap) 
 }

@@ -29,6 +29,7 @@ find_library(log-lib log)
 find_library(android-lib android)    
 find_library(egl-lib  EGL)
 find_library(gles-lib GLESv3)
+find_library(jnigraphics-lib jnigraphics)
 
 # 链接：系统 log 库 + 平台无关的 fantasy_core（静态库，被吸收进 .so）。
 # 链了 fantasy_core 后，jni_bridge.cpp 里可以 #include <fantasy/...>。
@@ -36,6 +37,7 @@ target_link_libraries(engine
         ${log-lib}
         ${android-lib}     
         ${egl-lib}             
-        ${gles-lib}             
+        ${gles-lib}   
+        ${jnigraphics-lib}           
         fantasy_core
 )

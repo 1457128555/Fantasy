@@ -4,6 +4,7 @@
 #include "Render/CommandQueue.h"
 
 #include <memory>
+#include <cstdint>     
 
 namespace Fantasy::Render
 {
@@ -27,6 +28,9 @@ namespace Fantasy::Render
 
         [[nodiscard]] bool initRenderer(); 
         void renderFrame(int width, int height); 
+
+        void setImage(int width, int height, const uint8_t* pixels);  
+
     private:
         std::unique_ptr<Context>        mContext;
         std::unique_ptr<RenderThread>   mThread;

@@ -3,6 +3,7 @@
 #include "Common/Macros.h"
 #include "Render/GL.h"
 #include "Render/ShaderProgram.h"
+#include "Render/Texture.h"
 
 namespace Fantasy::Render
 {
@@ -15,11 +16,14 @@ namespace Fantasy::Render
         [[nodiscard]] 
         bool initGL();       
 
-        void render(int width, int height); 
+        void render(int width, int height);
+        
+        void setImage(int width, int height, const uint8_t* pixels);  
 
         FANTASY_NON_COPYABLE(Renderer);
     private:
         ShaderProgram mProgram; 
+        Texture       mTexture;
         GLuint        mVBO = 0;
     };
 }
