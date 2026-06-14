@@ -63,9 +63,15 @@ Java_com_fan_engine_EngineBridge_nativeSurfaceCreated(JNIEnv *env, jobject thiz,
             Logger::Instance()->logE("engine", "makeCurrent fail");
             return;
         }
-        glClearColor(0.8f, 0.1f, 0.1f, 1.0f);             
-        glClear(GL_COLOR_BUFFER_BIT);
-        g_eglContext->swapBuffers();                        
+
+        if (!System::Instance()->initRenderer()) {       // 建 program+VBO（本 context 一次）
+            Logger::Instance()->logE("engine", "initRenderer fail");
+            return;
+        }
+        System::Instance()->renderFrame(g_eglContext->width(), g_eglContext->height());
+        
+        
+        g_eglContext->swapBuffers();
     });
 }
 
