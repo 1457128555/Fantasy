@@ -5,7 +5,7 @@
 
 #include <memory>
 #include <utility>
-
+#include <future>
 
 namespace Fantasy::Render
 {
@@ -43,6 +43,17 @@ namespace Fantasy::Render
     void System::post(CommandQueue::Task task)
     {
         mThread->post(std::move(task));
+    }
+
+    void System::postAndWait(CommandQueue::Task task)
+    {
+        auto done = std::make_shared<std::promise<void>>();
+        std::future<void> fut = done->get_future(); 
+        post([task = std::move(task), done]() {          
+            task();                                     
+            done->set_value();                          
+        });
+        fut.get(); 
     }
 
     Context* System::getContext()

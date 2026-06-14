@@ -23,6 +23,8 @@ namespace Fantasy::Render
         void deinit();
 
         void post(CommandQueue::Task task);
+        void postAndWait(CommandQueue::Task task);
+
 
         Context* getContext();
 

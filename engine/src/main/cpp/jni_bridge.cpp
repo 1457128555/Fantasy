@@ -89,7 +89,7 @@ Java_com_fan_engine_EngineBridge_nativeSurfaceChanged(JNIEnv *env, jobject thiz,
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_fan_engine_EngineBridge_nativeSurfaceDestroyed(JNIEnv *env, jobject thiz) {
-    System::Instance()->post([]() {
+    System::Instance()->postAndWait([]() {
         System::Instance()->getContext()->detach();
         g_eglContext.reset();   
     });
