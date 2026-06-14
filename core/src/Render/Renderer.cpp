@@ -8,10 +8,11 @@ namespace Fantasy::Render
         const char* kVertexSrc = R"(#version 300 es
             layout(location = 0) in vec2 aPos;
             layout(location = 1) in vec2 aUV;
+            uniform vec2 uScale;          // CPU 算好的 fit 缩放(sx, sy)
             out vec2 vUV;
             void main() {
                 vUV = aUV;
-                gl_Position = vec4(aPos, 0.0, 1.0);
+                gl_Position = vec4(aPos * uScale, 0.0, 1.0);
             }
         )";
 
@@ -26,10 +27,10 @@ namespace Fantasy::Render
         )";
 
         const float kQuad[] = {
-            -0.5f, -0.5f,   0.0f, 0.0f,
-             0.5f, -0.5f,   1.0f, 0.0f,
-            -0.5f,  0.5f,   0.0f, 1.0f,
-             0.5f,  0.5f,   1.0f, 1.0f,
+            -1.0f, -1.0f,   0.0f, 0.0f,
+             1.0f, -1.0f,   1.0f, 0.0f,
+            -1.0f,  1.0f,   0.0f, 1.0f,
+             1.0f,  1.0f,   1.0f, 1.0f,
         };
     }
 
@@ -56,6 +57,7 @@ namespace Fantasy::Render
             }
         if (!mTexture.initRGBA(N, N, pixels.data()))
             return false;
+        mImageW = mImageH = N;
 
         glGenBuffers(1, &mVBO);
         glBindBuffer(GL_ARRAY_BUFFER, mVBO);
@@ -71,6 +73,15 @@ namespace Fantasy::Render
         glClear(GL_COLOR_BUFFER_BIT);
 
         mProgram.use();
+
+        // aspect-fit:把图片不变形地居中塞进 surface,短边留黑边
+        float imgAspect  = (float)mImageW / (float)mImageH;
+        float surfAspect = (float)width   / (float)height;
+        float r = imgAspect / surfAspect;
+        float sx, sy;
+        if (r > 1.0f) { sx = 1.0f; sy = 1.0f / r; }   // 图更宽 → 撑满宽,上下黑边
+        else          { sx = r;    sy = 1.0f;     }   // 图更高 → 撑满高,左右黑边
+        glUniform2f(mProgram.uniformLocation("uScale"), sx, sy);
 
         mTexture.bind(0);
         glUniform1i(mProgram.uniformLocation("uTex"), 0);
@@ -92,6 +103,8 @@ namespace Fantasy::Render
 
     void Renderer::setImage(int width, int height, const uint8_t* pixels)
     {
-        mTexture.initRGBA(width, height, pixels);   
+        mTexture.initRGBA(width, height, pixels);
+        mImageW = width;
+        mImageH = height;
     }
 }

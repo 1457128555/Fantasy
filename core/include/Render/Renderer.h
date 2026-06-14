@@ -22,8 +22,10 @@ namespace Fantasy::Render
 
         FANTASY_NON_COPYABLE(Renderer);
     private:
-        ShaderProgram mProgram; 
+        ShaderProgram mProgram;
         Texture       mTexture;
         GLuint        mVBO = 0;
+        int           mImageW = 1;   // 当前贴图尺寸,render 时算 aspect-fit 用
+        int           mImageH = 1;
     };
 }
