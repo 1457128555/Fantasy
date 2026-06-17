@@ -16,10 +16,32 @@ namespace Fantasy
             && Render::System::Instance()->initialize();
     }
 
-    void Engine::deinit()
+    void Engine::renderOneFrame(float dt)
     {
-        Render::System::Instance()->deinit();
-        Common::Logger::Instance()->deinit();
+        Render::System::Instance()->renderOneFrame(dt);
+    }
+
+    void Engine::destroy()
+    {
+        Render::System::Instance()->destroy();
+        Common::Logger::Instance()->destroy();
+    }
+
+    bool Engine::onSurfaceCreated(void* win)
+    {
+        mWinHandle = win;
+        return Render::System::Instance()->onSurfaceCreated(win);
+    }
+
+    void Engine::onSurfaceChanged(int w, int h)
+    {
+        Render::System::Instance()->onSurfaceChanged(w, h);
+    }
+
+    void* Engine::onSurfaceDestroyed()
+    {
+        Render::System::Instance()->onSurfaceDestroyed();
+        return mWinHandle;
     }
 
     Engine::~Engine()

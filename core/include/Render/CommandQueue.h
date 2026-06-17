@@ -18,9 +18,9 @@ namespace Fantasy::Render
         using Task = std::function<void()>;
         void post(Task task);
         
-        [[nodiscard]]bool waitAndPop(Task& out);
+        bool waitAndPop(Task& out);
         
-        void stop();
+        void destroy();
 
         FANTASY_NON_COPYABLE(CommandQueue);
     private:

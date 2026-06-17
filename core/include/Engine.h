@@ -10,11 +10,19 @@ namespace Fantasy
         
         ~Engine();
         
-        [[nodiscard]] bool initialize();
+        bool initialize();
         
-        void deinit();
+        void destroy();
+
+        void renderOneFrame(float dt);
+
+        bool onSurfaceCreated(void* win);
+
+        void onSurfaceChanged(int w, int h);
+
+        void* onSurfaceDestroyed();
 
     private:
-
+        void* mWinHandle = nullptr;
     };
 } // namespace Fantasy

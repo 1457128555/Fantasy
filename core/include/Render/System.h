@@ -1,16 +1,12 @@
 #pragma once
 
 #include "Common/Singleton.h"
-#include "Render/CommandQueue.h"
-
+#include "Render/RenderThread.h"
 #include <memory>
-#include <cstdint>     
 
 namespace Fantasy::Render
 {
-    class Context;
-    class RenderThread;
-    class Renderer; 
+    class IGLContext;
     class System : public Common::Singleton<System>
     {
     public:
@@ -18,26 +14,21 @@ namespace Fantasy::Render
         
         ~System();
 
-        [[nodiscard]] bool initialize();
+        bool initialize();
         
-        void deinit();
+        void destroy();
 
-        void post(CommandQueue::Task task);
-        void postAndWait(CommandQueue::Task task);
+        void renderOneFrame(float dt);
 
+        bool onSurfaceCreated(void* win);
 
-        Context* getContext();
+        void onSurfaceChanged(int w, int h);
 
-        [[nodiscard]] bool initRenderer(); 
-        void renderFrame(int width, int height); 
+        void onSurfaceDestroyed();
 
-        void setImage(int width, int height, const uint8_t* pixels);
-
-        void releaseRenderer();   // 在渲染线程销毁 GL 资源（关闭时调，须 context 仍 current）
 
     private:
-        std::unique_ptr<Context>        mContext;
-        std::unique_ptr<RenderThread>   mThread;
-        std::unique_ptr<Renderer>       mRenderer; 
+        RenderThread mThread;
+        std::unique_ptr<IGLContext> mContext;
     };
 }

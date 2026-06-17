@@ -1,17 +1,15 @@
 #include "Render/System.h"
-#include "Render/Context.h"
-#include "Render/RenderThread.h"
-#include "Render/Renderer.h"    
-
-#include <memory>
-#include <utility>
-#include <future>
+#if defined(__ANDROID__)
+    #include "Render/EglContext.h"
+#endif
 
 namespace Fantasy::Render
 {
     System::System()
     {
-
+#if defined(__ANDROID__)
+        mContext = std::make_unique<EglContext>();
+#endif
     }
 
     System::~System()
@@ -21,63 +19,32 @@ namespace Fantasy::Render
 
     bool System::initialize() 
     {
-        mContext = std::make_unique<Context>();
-        mThread = std::make_unique<RenderThread>();
-        mThread->start();
-
-        mRenderer = std::make_unique<Renderer>();   
-
-        return true;
+        return mThread.initialize() 
+            && mContext->initialize();
     }
 
-    void System::deinit()
+    void System::renderOneFrame(float dt)
     {
-        mThread->stop();
-        mThread.reset();
-        mRenderer.reset();   
-        mContext.reset();
-
 
     }
 
-    void System::post(CommandQueue::Task task)
+    void System::destroy()
     {
-        mThread->post(std::move(task));
+        mContext->destroy();
+        mThread.destroy();
     }
 
-    void System::postAndWait(CommandQueue::Task task)
+    bool System::onSurfaceCreated(void* win)
     {
-        auto done = std::make_shared<std::promise<void>>();
-        std::future<void> fut = done->get_future(); 
-        post([task = std::move(task), done]() {          
-            task();                                     
-            done->set_value();                          
-        });
-        fut.get(); 
+        return mContext->onSurfaceCreated(win);
     }
 
-    Context* System::getContext()
+    void System::onSurfaceChanged(int w, int h)
     {
-        return mContext.get();
     }
 
-    bool System::initRenderer()
+    void System::onSurfaceDestroyed()
     {
-        return mRenderer->initGL();
-    }
-
-    void System::renderFrame(int width, int height)
-    {
-        mRenderer->render(width, height);
-    }
-
-    void System::setImage(int width, int height, const uint8_t* pixels)
-    {
-        mRenderer->setImage(width, height, pixels);
-    }
-
-    void System::releaseRenderer()
-    {
-        mRenderer.reset();   // Renderer/Texture/ShaderProgram 析构里的 glDelete*（须在渲染线程 + context current）
+        mContext->onSurfaceDestroyed();
     }
 }

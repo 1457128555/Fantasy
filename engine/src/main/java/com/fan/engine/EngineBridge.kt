@@ -8,17 +8,15 @@ object EngineBridge {
         System.loadLibrary("engine")
     }
 
-    external fun nativeHello(): String
+    external fun initialize() : Boolean
 
-    external fun nativeInit()
+    external fun destroy()
 
-    external fun nativeDestroy()
+    external fun onSurfaceCreated(surface: Surface) : Boolean
 
-    external fun nativeSurfaceCreated(surface: Surface)
+    external fun onSurfaceChanged(width: Int, height: Int)
 
-    external fun nativeSurfaceChanged(width: Int, height: Int)
+    external fun onSurfaceDestroyed()
 
-    external fun nativeSurfaceDestroyed()
-
-    external fun nativeSetImage(bitmap: Bitmap) 
+    external fun setImage(bitmap: Bitmap)
 }

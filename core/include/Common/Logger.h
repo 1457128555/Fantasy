@@ -13,9 +13,9 @@ namespace Fantasy::Common
 
         ~Logger();
 
-        [[nodiscard]] bool initialize();
+        bool initialize();
 
-        void deinit();
+        void destroy();
 
         enum Level
         {

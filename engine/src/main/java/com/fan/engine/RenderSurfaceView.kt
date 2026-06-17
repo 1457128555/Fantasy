@@ -11,15 +11,15 @@ class RenderSurfaceView(context: Context) : SurfaceView(context), SurfaceHolder.
     }
 
     override fun surfaceCreated(holder: SurfaceHolder) {
-        EngineBridge.nativeSurfaceCreated(holder.surface)
+        EngineBridge.onSurfaceCreated(holder.surface)
     }
 
     override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {
-        EngineBridge.nativeSurfaceChanged(width, height)
+        EngineBridge.onSurfaceChanged(width, height)
     }
 
     override fun surfaceDestroyed(holder: SurfaceHolder) {
-        EngineBridge.nativeSurfaceDestroyed()
+        EngineBridge.onSurfaceDestroyed()
     }
 
     companion object {

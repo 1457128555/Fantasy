@@ -1,39 +1,48 @@
-#include "EglContext.h"
+#include "Render/EglContext.h"
 #include "Common/Logger.h"
 
+#if defined(__ANDROID__)
 #include <android/native_window.h>   
 
-namespace Fantasy::Android
+namespace Fantasy::Render
 {
+    namespace
+    {
+        const std::string& _Tag = "EglContext";
+        void _LogN(const std::string& msg)
+        {
+            Common::Logger::Instance()->logN(_Tag, msg);
+        }
+
+        void _LogE(const std::string& msg)
+        {
+            Common::Logger::Instance()->logE(_Tag, msg);
+        }
+    }
+
     EglContext::EglContext()
     {
-
+        _LogN("Constructor");
     }
 
     EglContext::~EglContext()
     {
-        if (mDisplay != EGL_NO_DISPLAY)
-        {
-            destroySurface();   // 解绑 + 毁 surface（若还在）
-            if (mContext != EGL_NO_CONTEXT) eglDestroyContext(mDisplay, mContext);
-        }
-        mContext = EGL_NO_CONTEXT;
-        mSurface = EGL_NO_SURFACE;
-        mDisplay = EGL_NO_DISPLAY;
+        _LogN("Destructor");
     }
 
     bool EglContext::initialize()
     {
+        _LogN("initialize");
         mDisplay = eglGetDisplay(EGL_DEFAULT_DISPLAY);
         if (mDisplay == EGL_NO_DISPLAY) 
         {
-            Common::Logger::Instance()->logE("EglContext", "getDisplay fail");
+            _LogE("getDisplay fail");
             return false;
         }
 
         if (eglInitialize(mDisplay, nullptr, nullptr) != EGL_TRUE) 
         {
-            Common::Logger::Instance()->logE("EglContext", "init fail");
+            _LogE("init fail");
             return false; 
         }
 
@@ -48,7 +57,7 @@ namespace Fantasy::Android
         EGLint num = 0;
         if (eglChooseConfig(mDisplay, cfgAttribs, &mConfig, 1, &num) != EGL_TRUE || num < 1)
         {
-            Common::Logger::Instance()->logE("EglContext", "chooseConfig fail");
+            _LogE("chooseConfig fail");
             return false;
         }
 
@@ -56,33 +65,45 @@ namespace Fantasy::Android
         mContext = eglCreateContext(mDisplay, mConfig, EGL_NO_CONTEXT, ctxAttribs);
         if (mContext == EGL_NO_CONTEXT)
         {
-            Common::Logger::Instance()->logE("EglContext", "createContext fail");
+            _LogE("createContext fail");
             return false; 
         }
-
         return true;
     }
 
-    bool EglContext::createSurface(ANativeWindow* window)
+    void EglContext::destroy()
     {
+        _LogN("destroy");
+        if (mDisplay != EGL_NO_DISPLAY && mContext != EGL_NO_CONTEXT)
+            eglDestroyContext(mDisplay, mContext);
+        mContext = EGL_NO_CONTEXT;
+        mDisplay = EGL_NO_DISPLAY;
+        mConfig  = nullptr;
+    }
+
+    bool EglContext::onSurfaceCreated(void* window)
+    {
+        _LogN("onSurfaceCreate");
+        auto* win = static_cast<ANativeWindow*>(window);
         EGLint visualId = 0;
         eglGetConfigAttrib(mDisplay, mConfig, EGL_NATIVE_VISUAL_ID, &visualId);
-        ANativeWindow_setBuffersGeometry(window, 0, 0, visualId);
+        ANativeWindow_setBuffersGeometry(win, 0, 0, visualId);
 
-        mSurface = eglCreateWindowSurface(mDisplay, mConfig, window, nullptr);
+        mSurface = eglCreateWindowSurface(mDisplay, mConfig, win, nullptr);
         if (mSurface == EGL_NO_SURFACE)
         {
-            Common::Logger::Instance()->logE("EglContext", "createWindowSurface fail");
+            _LogE("createWindowSurface fail");
             return false;
         }
         return true;
     }
 
-    void EglContext::destroySurface()
+    void EglContext::onSurfaceDestroyed()
     {
+        _LogN("onSurfaceDestroy");
         if (mSurface != EGL_NO_SURFACE)
         {
-            eglMakeCurrent(mDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);  // 先解绑
+            eglMakeCurrent(mDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);  
             eglDestroySurface(mDisplay, mSurface);
             mSurface = EGL_NO_SURFACE;
         }
@@ -90,11 +111,13 @@ namespace Fantasy::Android
 
     bool EglContext::makeCurrent()
     {
+        _LogN("makeCurrent");
         return eglMakeCurrent(mDisplay, mSurface, mSurface, mContext) == EGL_TRUE;
     }
 
     void EglContext::swapBuffers() 
     {
+        _LogN("swapBuffers");
         eglSwapBuffers(mDisplay, mSurface);   
     }
 
@@ -112,3 +135,4 @@ namespace Fantasy::Android
         return h;
     }
 }
+#endif

@@ -20,7 +20,6 @@ add_subdirectory(
 # 这三处必须一致。SHARED = 动态库（.so），打进 APK 的 lib/arm64-v8a/。
 add_library(engine SHARED
         jni_bridge.cpp
-        EglContext.cpp
 )
 
 # liblog 是 NDK sysroot 自带的系统库，__android_log_print 用它。

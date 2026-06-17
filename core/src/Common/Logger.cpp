@@ -19,7 +19,7 @@ namespace Fantasy::Common
         return true;
     }
 
-    void Logger::deinit()
+    void Logger::destroy()
     {
 
     }

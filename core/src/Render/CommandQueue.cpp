@@ -28,7 +28,7 @@ namespace Fantasy::Render
         return false;
     }
     
-    void CommandQueue::stop()
+    void CommandQueue::destroy()
     {
         {
             std::lock_guard<std::mutex> lk(mMutex);

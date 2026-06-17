@@ -14,11 +14,13 @@ namespace Fantasy::Render
         
         ~RenderThread();
 
-        void start();
+        bool initialize();
+        
+        void destroy();
 
         void post(CommandQueue::Task task);
 
-        void stop();
+        void postAndWait(CommandQueue::Task task);
 
         FANTASY_NON_COPYABLE(RenderThread);
 
