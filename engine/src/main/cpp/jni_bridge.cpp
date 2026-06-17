@@ -41,6 +41,11 @@ extern "C"
         delete Engine::Instance();
     }
 
+    JNIEXPORT void JNICALL
+    Java_com_fan_engine_renderOneFrame(JNIEnv* env, jobject thiz) {
+        Engine::Instance()->renderOneFrame(0.f);
+    }
+
     JNIEXPORT bool JNICALL
     Java_com_fan_engine_EngineBridge_onSurfaceCreated(JNIEnv *env, jobject thiz, jobject surface) {
         ANativeWindow* win = ANativeWindow_fromSurface(env, surface);
@@ -59,7 +64,7 @@ extern "C"
     }
 
     JNIEXPORT void JNICALL
-    Java_com_fan_engine_EngineBridge_setEditorImage(JNIEnv* env, jobject thiz, jobject bitmap) {
+    Java_com_fan_engine_EngineBridge_setImage(JNIEnv* env, jobject thiz, jobject bitmap) {
 
         // AndroidBitmapInfo info;
         // if (AndroidBitmap_getInfo(env, bitmap, &info) != ANDROID_BITMAP_RESULT_SUCCESS) {

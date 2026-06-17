@@ -12,6 +12,8 @@ object EngineBridge {
 
     external fun destroy()
 
+    external fun renderOneFrame()
+
     external fun onSurfaceCreated(surface: Surface) : Boolean
 
     external fun onSurfaceChanged(width: Int, height: Int)

@@ -3,6 +3,8 @@
     #include "Render/EglContext.h"
 #endif
 
+#include "Render/GL.h"
+
 namespace Fantasy::Render
 {
     System::System()
@@ -19,13 +21,22 @@ namespace Fantasy::Render
 
     bool System::initialize() 
     {
-        return mThread.initialize() 
-            && mContext->initialize();
+        if(!mThread.initialize())
+            return false;
+        
+        if(!mContext->initialize())
+            return false;
+        return true;
     }
 
     void System::renderOneFrame(float dt)
     {
-
+        mThread.post([&](){
+            // glViewport(0, 0, width, height);
+            glClearColor(1.0f, 0.10f, 0.12f, 1.0f);
+            glClear(GL_COLOR_BUFFER_BIT);
+            mContext->swapBuffers();
+        });
     }
 
     void System::destroy()
@@ -36,15 +47,33 @@ namespace Fantasy::Render
 
     bool System::onSurfaceCreated(void* win)
     {
-        return mContext->onSurfaceCreated(win);
+        bool ret = false;
+        mThread.postAndWait([&](){
+            ret = mContext->onSurfaceCreated(win);
+        });
+
+        mThread.post([&](){
+            mContext->makeCurrent();
+        });
+
+        renderOneFrame(0.f);
+
+        return ret;
     }
 
     void System::onSurfaceChanged(int w, int h)
-    {
+    {       
+        mThread.post([=](){
+            glViewport(0, 0, w, h);
+            // glClearColor(0.10f, 0.10f, 0.12f, 1.0f);
+            // glClear(GL_COLOR_BUFFER_BIT);
+        });
     }
 
     void System::onSurfaceDestroyed()
     {
-        mContext->onSurfaceDestroyed();
+        mThread.postAndWait([&](){
+            mContext->onSurfaceDestroyed();
+        });
     }
 }
