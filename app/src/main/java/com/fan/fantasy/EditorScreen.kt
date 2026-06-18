@@ -1,6 +1,6 @@
 package com.fan.fantasy
 
-import android.graphics.ImageDecoder
+import android.graphics.BitmapFactory  
 import android.net.Uri
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -25,12 +25,15 @@ fun EditorScreen(uriString: String, onBack: () -> Unit) {
 
     LaunchedEffect(uriString) {                      // 进页一次性：按 uri 解码并喂给引擎
         val uri = Uri.parse(uriString)
-        val source = ImageDecoder.createSource(context.contentResolver, uri)
-        val bitmap = ImageDecoder.decodeBitmap(source) { decoder, _, _ ->
-            decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE   // 必须软件位图，否则 JNI 锁不住像素
+
+        val resolver = context.contentResolver
+        val bitmap = resolver.openInputStream(uri)?.use { stream ->
+            BitmapFactory.decodeStream(stream)
         }
-        EngineBridge.setImage(bitmap)          // 现在它只「标脏」，不抢 surface 的跑了
-        bitmap.recycle()
+        bitmap?.let {
+            EngineBridge.setImage(it)
+            it.recycle()
+        }
     }
 
     Box(Modifier.fillMaxSize()) {

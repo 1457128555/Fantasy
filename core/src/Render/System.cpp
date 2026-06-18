@@ -21,10 +21,9 @@ namespace Fantasy::Render
 
     bool System::initialize() 
     {
-        if(!mThread.initialize())
-            return false;
-        
         if(!mContext->initialize())
+            return false;
+        if(!mThread.initialize())
             return false;
         return true;
     }
@@ -41,8 +40,8 @@ namespace Fantasy::Render
 
     void System::destroy()
     {
-        mContext->destroy();
         mThread.destroy();
+        mContext->destroy();
     }
 
     bool System::onSurfaceCreated(void* win)

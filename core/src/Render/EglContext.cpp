@@ -74,8 +74,12 @@ namespace Fantasy::Render
     void EglContext::destroy()
     {
         _LogN("destroy");
-        if (mDisplay != EGL_NO_DISPLAY && mContext != EGL_NO_CONTEXT)
-            eglDestroyContext(mDisplay, mContext);
+        if (mDisplay != EGL_NO_DISPLAY)
+        {
+            if(mContext != EGL_NO_CONTEXT)
+                eglDestroyContext(mDisplay, mContext);
+            eglTerminate(mDisplay);
+        }
         mContext = EGL_NO_CONTEXT;
         mDisplay = EGL_NO_DISPLAY;
         mConfig  = nullptr;
