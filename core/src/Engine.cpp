@@ -35,6 +35,7 @@ namespace Fantasy
 
     void Engine::onSurfaceChanged(int w, int h)
     {
+        mWidth = w, mHeight = h;
         Render::System::Instance()->onSurfaceChanged(w, h);
     }
 
@@ -42,6 +43,13 @@ namespace Fantasy
     {
         Render::System::Instance()->onSurfaceDestroyed();
         return mWinHandle;
+    }
+
+    void Engine::setImage(void* data, int w, int h)
+    {
+        mImgW = w, mImgH = h;
+        mImage.resize((size_t)w * h * 4);
+        memcpy(mImage.data(), data, (size_t)w * h* 4);
     }
 
     Engine::~Engine()

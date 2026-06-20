@@ -32,6 +32,7 @@ fun EditorScreen(uriString: String, onBack: () -> Unit) {
         }
         bitmap?.let {
             EngineBridge.setImage(it)
+            EngineBridge.renderOneFrame();
             it.recycle()
         }
     }

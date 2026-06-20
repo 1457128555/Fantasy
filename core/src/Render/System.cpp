@@ -4,6 +4,8 @@
 #endif
 
 #include "Render/GL.h"
+#include "Render/Renderer.h"
+#include "Engine.h"
 
 namespace Fantasy::Render
 {
@@ -30,10 +32,17 @@ namespace Fantasy::Render
 
     void System::renderOneFrame(float dt)
     {
-        mThread.post([&](){
-            // glViewport(0, 0, width, height);
-            glClearColor(1.0f, 0.10f, 0.12f, 1.0f);
-            glClear(GL_COLOR_BUFFER_BIT);
+        int winW = Engine::Instance()->getWidth();
+        int winH = Engine::Instance()->getHeight();
+        int imgW = Engine::Instance()->getImgW();
+        int imgH = Engine::Instance()->getImgH();
+
+        auto imgPtr = std::make_shared<std::vector<uint8_t>>(Engine::Instance()->getImage());
+        mThread.post([=](){
+            Renderer r;
+            r.initGL();
+            r.setImage(imgW, imgH, imgPtr->data());
+            r.render(winW, winH);
             mContext->swapBuffers();
         });
     }
@@ -64,8 +73,6 @@ namespace Fantasy::Render
     {       
         mThread.post([=](){
             glViewport(0, 0, w, h);
-            // glClearColor(0.10f, 0.10f, 0.12f, 1.0f);
-            // glClear(GL_COLOR_BUFFER_BIT);
         });
     }
 

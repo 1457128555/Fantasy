@@ -45,20 +45,6 @@ namespace Fantasy::Render
         if (!mProgram.initFromSource(kVertexSrc, kFragmentSrc))
             return false;
 
-        //  Texture
-        const int N = 8;
-        std::vector<uint8_t> pixels(N * N * 4);
-        for (int y = 0; y < N; ++y)
-            for (int x = 0; x < N; ++x)
-            {
-                uint8_t c = (((x + y) & 1) == 0) ? 235 : 40;
-                int i = (y * N + x) * 4;
-                pixels[i+0] = c; pixels[i+1] = c; pixels[i+2] = c; pixels[i+3] = 255;
-            }
-        if (!mTexture.initRGBA(N, N, pixels.data()))
-            return false;
-        mImageW = mImageH = N;
-
         glGenBuffers(1, &mVBO);
         glBindBuffer(GL_ARRAY_BUFFER, mVBO);
         glBufferData(GL_ARRAY_BUFFER, sizeof(kQuad), kQuad, GL_STATIC_DRAW);
