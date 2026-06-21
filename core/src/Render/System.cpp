@@ -1,6 +1,8 @@
 #include "Render/System.h"
 #if defined(__ANDROID__)
     #include "Render/EglContext.h"
+#elif defined(__APPLE__)
+    #include "Render/EaglContext.h"
 #endif
 
 #include "Render/GL.h"
@@ -13,6 +15,8 @@ namespace Fantasy::Render
     {
 #if defined(__ANDROID__)
         mContext = std::make_unique<EglContext>();
+#elif defined(__APPLE__)
+        mContext = std::make_unique<EaglContext>();
 #endif
     }
 
@@ -55,10 +59,8 @@ namespace Fantasy::Render
 
     bool System::onSurfaceCreated(void* win)
     {
-        bool ret = false;
-        mThread.postAndWait([&](){
-            ret = mContext->onSurfaceCreated(win);
-        });
+        if(!mContext->onSurfaceCreated(win))
+            return false;
 
         mThread.post([&](){
             mContext->makeCurrent();
@@ -66,7 +68,7 @@ namespace Fantasy::Render
 
         renderOneFrame(0.f);
 
-        return ret;
+        return true;
     }
 
     void System::onSurfaceChanged(int w, int h)

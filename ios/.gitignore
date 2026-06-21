@@ -1,0 +1,10 @@
+# xcodegen 生成物（从 project.yml 重新生成）
+*.xcodeproj/
+App/Info.plist
+
+# 编译产物 / 派生数据
+build/
+
+# 截图
+*.png
+build.log

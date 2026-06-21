@@ -1,0 +1,47 @@
+name: Fantasy
+
+options:
+  bundleIdPrefix: com.cfan
+  deploymentTarget:
+    iOS: "16.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    CLANG_CXX_LANGUAGE_STANDARD: "c++20"
+    CLANG_CXX_LIBRARY: "libc++"
+    CLANG_ENABLE_OBJC_ARC: YES
+
+targets:
+  Fantasy:
+    type: application
+    platform: iOS
+    sources:
+      - path: App
+      - path: Bridge
+      # 平台无关的 C++ 引擎 + EaglContext.mm 直接编进 iOS target
+      - path: ../core/src
+        name: core
+    dependencies:
+      - sdk: OpenGLES.framework
+      - sdk: QuartzCore.framework
+      - sdk: PhotosUI.framework
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.cfan.fantasy
+        DEVELOPMENT_TEAM: UMDMW9DJ55          # Personal Team（自动查到，签名跨 regenerate 持久化）
+        CODE_SIGN_STYLE: Automatic
+        SWIFT_OBJC_BRIDGING_HEADER: Bridge/Fantasy-Bridging-Header.h
+        # core 的头文件（"Render/System.h" / "Engine.h" / "Common/..."）
+        HEADER_SEARCH_PATHS:
+          - $(SRCROOT)/../core/include
+        # 关掉 OpenGLES 弃用告警刷屏（iOS 上 GLES 已 deprecated）
+        GCC_PREPROCESSOR_DEFINITIONS:
+          - GLES_SILENCE_DEPRECATION=1
+    info:
+      path: App/Info.plist
+      properties:
+        # 空 UILaunchScreen 让 app 用全分辨率（否则截图会被缩放/加黑边）
+        UILaunchScreen: {}
+        UIApplicationSupportsIndependentDisplay: false
