@@ -5,6 +5,6 @@ App/Info.plist
 # 编译产物 / 派生数据
 build/
 
-# 截图
-*.png
+# 截图(只忽略 ios/ 根目录下 verify.sh 生成的,别误伤 Assets.xcassets 里的资源图)
+/*.png
 build.log
