@@ -15,6 +15,9 @@ using namespace Fantasy;
 
 @implementation FantasyGLView {
     BOOL _ready;
+    NSData *_pickedData;   // 选好的真图(RGBA8);nil 则回退合成图
+    int _pickedW;
+    int _pickedH;
 }
 
 + (Class)layerClass { return [CAEAGLLayer class]; }
@@ -61,10 +64,20 @@ using namespace Fantasy;
     if (pw <= 0 || ph <= 0) return;   
     _ready = YES;
 
-    [self setSyntheticImage];                                   
-    Engine::Instance()->onSurfaceCreated((__bridge void *)self.layer); 
+    if (_pickedData) {                                          // 有选好的真图就用它
+        Engine::Instance()->setImage((void *)_pickedData.bytes, _pickedW, _pickedH);
+    } else {
+        [self setSyntheticImage];                               // 否则回退合成图(spike 用)
+    }
+    Engine::Instance()->onSurfaceCreated((__bridge void *)self.layer);
     Engine::Instance()->onSurfaceChanged(pw, ph);                
     Engine::Instance()->renderOneFrame(0.f);                     
+}
+
+- (void)setPickedImageData:(NSData *)data width:(int)w height:(int)h {
+    _pickedData = data;
+    _pickedW = w;
+    _pickedH = h;
 }
 
 - (void)setSyntheticImage {
