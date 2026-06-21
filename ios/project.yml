@@ -39,6 +39,8 @@ targets:
         # 关掉 OpenGLES 弃用告警刷屏（iOS 上 GLES 已 deprecated）
         GCC_PREPROCESSOR_DEFINITIONS:
           - GLES_SILENCE_DEPRECATION=1
+        # 用 Assets.xcassets 里的 AppIcon 作为应用图标
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
     info:
       path: App/Info.plist
       properties:
