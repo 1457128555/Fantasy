@@ -2,4 +2,4 @@
 # 从而正确解析 include 路径、__ANDROID__ 宏、C++20 标准——消除"找不到头/未声明"的假报。
 # 这份数据库由 `:engine:externalNativeBuildDebug` 配置阶段生成，路径不带 hash，稳定。
 CompileFlags:
-  CompilationDatabase: engine/.cxx/tools/debug/arm64-v8a
+  CompilationDatabase: android/engine/.cxx/tools/debug/arm64-v8a

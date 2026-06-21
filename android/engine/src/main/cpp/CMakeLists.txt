@@ -12,7 +12,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # 引入平台无关的 core（顶层 core/，被 Android 和将来 iOS 共享）。
 # core 在 cpp 目录之外，add_subdirectory 必须显式指定第二个参数（构建输出目录）。
 add_subdirectory(
-        ${CMAKE_CURRENT_SOURCE_DIR}/../../../../core   # 源码目录：Fantasy/core
+        ${CMAKE_CURRENT_SOURCE_DIR}/../../../../../core   # 源码目录：Fantasy/core（engine 现在 android/ 下，多一层 ..）
         ${CMAKE_CURRENT_BINARY_DIR}/fantasy_core        # 构建输出目录
 )
 

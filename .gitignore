@@ -1,16 +1,6 @@
-*.iml
-.gradle
-/local.properties
-/.idea/
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
 .DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
-local.properties
+
+# 根级残留的 IDE / 构建缓存（Android 工程已移入 android/，各平台有自己的 .gitignore）
+/.idea/
+/.gradle/
+/.kotlin/
