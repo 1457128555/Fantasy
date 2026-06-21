@@ -50,10 +50,11 @@ struct HomeView: View {
                         }
                         .font(.system(size: 19, weight: .semibold))
                         .foregroundStyle(brand)
-                        .padding(.horizontal, 52)
+                        .frame(maxWidth: .infinity)                  // 内容在胶囊内居中,撑满给定宽度
                         .padding(.vertical, 18)
                         .background(.white.opacity(0.92), in: Capsule())
                         .shadow(color: brand.opacity(0.25), radius: 12, x: 0, y: 5)
+                        .containerRelativeFrame(.horizontal) { width, _ in width * 0.7 }  // 宽 = 屏宽 70%
                     }
                     .padding(.bottom, 80)
                 }
