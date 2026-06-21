@@ -1,23 +1,21 @@
 #include "Render/System.h"
-#if defined(__ANDROID__)
-    #include "Render/EglContext.h"
-#elif defined(__APPLE__)
-    #include "Render/EaglContext.h"
-#endif
+#include "Render/IGLContext.h"   // 注入后 unique_ptr<IGLContext> 在本 TU 析构，需完整类型
 
 #include "Render/GL.h"
 #include "Render/Renderer.h"
 #include "Engine.h"
 
+#include <utility>   // std::move
+
 namespace Fantasy::Render
 {
     System::System()
     {
-#if defined(__ANDROID__)
-        mContext = std::make_unique<EglContext>();
-#elif defined(__APPLE__)
-        mContext = std::make_unique<EaglContext>();
-#endif
+    }
+
+    void System::setContext(std::unique_ptr<IGLContext> ctx)
+    {
+        mContext = std::move(ctx);   // 平台胶水注入，System 接管所有权
     }
 
     System::~System()
@@ -27,6 +25,8 @@ namespace Fantasy::Render
 
     bool System::initialize() 
     {
+        if(!mContext)              // 必须先 setContext 注入平台 context
+            return false;
         if(!mContext->initialize())
             return false;
         if(!mThread.initialize())
@@ -54,7 +54,8 @@ namespace Fantasy::Render
     void System::destroy()
     {
         mThread.destroy();
-        mContext->destroy();
+        if (mContext)              // 未注入/初始化失败的兜底，防空指针
+            mContext->destroy();
     }
 
     bool System::onSurfaceCreated(void* win)

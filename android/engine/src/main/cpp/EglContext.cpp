@@ -1,4 +1,4 @@
-#include "Render/EglContext.h"
+#include "EglContext.h"
 #include "Common/Logger.h"
 
 #if defined(__ANDROID__)

@@ -1,6 +1,9 @@
 #include "Engine.h"
 #include "Common/Logger.h"
 #include "Render/System.h"
+#include "Render/IGLContext.h"   // setContext 的 by-value unique_ptr 析构需完整类型
+
+#include <utility>   // std::move
 
 namespace Fantasy
 {
@@ -8,6 +11,11 @@ namespace Fantasy
     {
         new Common::Logger;
         new Render::System;
+    }
+
+    void Engine::setContext(std::unique_ptr<Render::IGLContext> ctx)
+    {
+        Render::System::Instance()->setContext(std::move(ctx));
     }
 
     bool Engine::initialize()

@@ -1,13 +1,15 @@
 # fantasy_core —— 平台无关的纯 C++ 渲染/编辑核心
 #
-# 铁律：本库不依赖任何平台头文件或库
-#   ✗ 不许 #include <jni.h> / <android/*> / <EGL/*> / <OpenGLES/*>
+# 铁律：本库不依赖平台「窗口 / context / 系统」头文件或库
+#   ✗ 不许 #include <jni.h> / <android/*> / <EGL/*> / <OpenGLES/EAGL*>（窗口/context/JNI）
 #   ✗ 不许链接 log / EGL 等平台库
-#   ✓ 平台服务（日志、GL context/surface、文件 IO）通过 include/fantasy/ 下的
-#     接口（如 IGLContext）由各平台胶水注入
+#   ✓ 但 GLES 绘制 API 头允许（<GLES3/gl3.h> / <OpenGLES/ES3/gl.h>）——core 直接做 draw，
+#     统一收口在 Render/GL.h（唯一平台 #ifdef 处）
+#   ✓ 平台服务（日志、GL context/surface、文件 IO）通过 include 下的接口
+#     （如 IGLContext）由各平台胶水注入
 #
-# 这样 Android（engine）和将来 iOS（platform/ios）能复用同一份 core。
-# GL ES 的 draw 调用两端通用，可放这里；context 创建（EGL/EAGL）属平台胶水。
+# 这样 Android（engine/）和 iOS（ios/）复用同一份 core。
+# GLES draw 两端通用，放这里；context 创建（EGL/EAGL）属平台胶水。
 
 cmake_minimum_required(VERSION 3.22.1)
 project(fantasy_core LANGUAGES CXX)

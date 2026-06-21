@@ -26,6 +26,8 @@ namespace Fantasy::Render
 
         void onSurfaceDestroyed();
 
+        void setContext(std::unique_ptr<IGLContext> ctx);
+
     private:
         RenderThread mThread;
         std::unique_ptr<IGLContext> mContext;

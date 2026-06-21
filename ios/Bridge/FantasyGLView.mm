@@ -6,8 +6,10 @@
 
 #include <vector>
 #include <cstdio>
+#include <memory>
 #include "Engine.h"
 #include "Common/Logger.h"
+#include "EaglContext.h"
 
 using namespace Fantasy;
 
@@ -41,6 +43,8 @@ using namespace Fantasy;
         [](Common::Logger::Level, const std::string& tag, const std::string& msg) {
             fprintf(stderr, "[Fantasy][%s] %s\n", tag.c_str(), msg.c_str());   // simctl 可抓
         });
+
+    Engine::Instance()->setContext(std::make_unique<Render::EaglContext>());
 
     if (!Engine::Instance()->initialize()) {
         fprintf(stderr, "[Fantasy] Engine initialize FAILED\n");

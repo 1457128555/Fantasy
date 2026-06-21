@@ -1,6 +1,9 @@
 #pragma once
 #include "Common/Singleton.h"
 #include <vector>
+#include <memory>
+
+namespace Fantasy::Render { class IGLContext; }  
 
 namespace Fantasy
 {
@@ -8,8 +11,10 @@ namespace Fantasy
     {
     public:
         Engine();
-        
+
         ~Engine();
+
+        void setContext(std::unique_ptr<Render::IGLContext> ctx);
         
         bool initialize();
         

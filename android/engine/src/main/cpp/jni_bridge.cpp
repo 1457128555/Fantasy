@@ -10,6 +10,9 @@
 
 #include "Common/Logger.h"
 #include "Engine.h"
+#include "EglContext.h"
+
+#include <memory>
 
 using namespace Fantasy;
 extern "C"
@@ -27,6 +30,8 @@ extern "C"
                 __android_log_print(prio, tag.c_str(), "%s", msg.c_str());
             }
         );
+
+        Engine::Instance()->setContext(std::make_unique<Render::EglContext>());
 
         if (!Engine::Instance()->initialize()) {
             Common::Logger::Instance()->logE("JNI_Bridge", "Engine initialize failed");

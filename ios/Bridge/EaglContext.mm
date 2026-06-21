@@ -1,4 +1,4 @@
-#include "Render/EaglContext.h"
+#include "EaglContext.h"
 #include "Common/Logger.h"
 
 #if defined(__APPLE__)
